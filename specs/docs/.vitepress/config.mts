@@ -2,13 +2,15 @@ import { defineConfig } from "vitepress";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "Infobús web",
-  description: "Página web del transporte público de Infobús",
+  title: "Databús app",
+  description: "Aplicación operativa de transporte público con Databús",
   cleanUrls: true,
-  base: "/infobus-web/",
+  base: "/databus-app/",
+  // image icon
 
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
+    logo: "/db.png",
     nav: [
       { text: "Inicio", link: "/" },
       { text: "Proyecto", link: "/proyecto/" },
@@ -41,9 +43,10 @@ export default defineConfig({
         text: "Desarrollo",
         items: [
           { text: "Lineamientos", link: "/desarrollo/" },
-          { text: "Infobús API", link: "/desarrollo/infobus-api/" },
-          { text: "Infobús Admin", link: "/desarrollo/infobus-admin/" },
-          { text: "Infobús MCP", link: "/desarrollo/infobus-mcp/" },
+          { text: "Tecnologías", link: "/desarrollo/tecnologias" },
+          { text: "Databús API", link: "/desarrollo/databus-api/" },
+          { text: "Databús Admin", link: "/desarrollo/databus-admin/" },
+          { text: "Databús MCP", link: "/desarrollo/databus-mcp/" },
           { text: "Configuración", link: "/desarrollo/configuracion/" },
           { text: "Implementación", link: "/desarrollo/implementacion/" },
           {

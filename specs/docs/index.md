@@ -3,12 +3,12 @@
 layout: home
 
 hero:
-  name: "Sitio web"
-  text: "Sistema de información para el transporte público en Costa Rica"
-  tagline: Especificación de las funcionalidades y características para el desarrollo del sitio.
+  name: "Databús app"
+  text: "Aplicación móvil para rastreo y telemetría de autobuses"
+  tagline: Especificación de las funcionalidades y características para el desarrollo de la aplicación.
   image:
-    src: /infobus.png
-    alt: Logo Infobús
+    src: /db.png
+    alt: Logo Databús
   actions:
     - theme: brand
       text: Sobre el proyecto
@@ -31,3 +31,15 @@ features:
     details: Lineamientos para el desarrollo del sitio web
     link: /desarrollo/
 ---
+
+&nbsp;
+
+<div style="
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 32px;
+  align-items: center;
+">
+  <img src="/simovi.png" alt="SIMOVI" style="width:100%; max-width:400px;" />
+  <img src="/tropicalizacion.png" alt="Tropicalización de la tecnología" style="width:100%; max-width:250px;" />
+</div>

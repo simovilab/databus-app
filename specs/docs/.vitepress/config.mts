@@ -6,7 +6,16 @@ export default defineConfig({
   description: "Aplicación operativa de transporte público con Databús",
   cleanUrls: true,
   base: "/databus-app/",
-  // image icon
+
+  head: [
+    [
+      "link",
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined",
+      },
+    ],
+  ],
 
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
@@ -89,7 +98,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: "github", link: "https://github.com/simovilab/infobus-web" },
+      { icon: "github", link: "https://github.com/simovilab/databus-app" },
     ],
 
     outlineTitle: "En esta página",

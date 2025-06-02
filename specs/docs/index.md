@@ -19,15 +19,15 @@ hero:
 
 features:
   - title: Proyecto
-    icon: ⚙️
+    icon: <span class="material-symbols-outlined">assignment</span>
     details: Información general sobre el proyecto Infobús
     link: /proyecto/
   - title: Diseño
-    icon: 🎨
+    icon: <span class="material-symbols-outlined">draw</span>
     details: Consideraciones para el diseño del sitio web
     link: /diseno/
   - title: Desarrollo
-    icon: 💻
+    icon: <span class="material-symbols-outlined">rocket_launch</span>
     details: Lineamientos para el desarrollo del sitio web
     link: /desarrollo/
 ---

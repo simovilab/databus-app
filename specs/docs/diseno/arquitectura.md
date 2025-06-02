@@ -1,3 +1,3 @@
 # Arquitectura del sistema
 
-Diagramas
+![Diagrama de arquitectura del sistema](/arquitectura.png)

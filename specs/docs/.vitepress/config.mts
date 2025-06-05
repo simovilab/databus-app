@@ -81,6 +81,18 @@ export default defineConfig({
             ],
           },
           {
+            text: "Vistas",
+            collapsed: true,
+            items: [
+              { text: "Splash", link: "/desarrollo/vistas/Splash" },
+              { text: "Home", link: "/desarrollo/vistas/Home" },
+              { text: "Login", link: "/desarrollo/vistas/Login" },
+              { text: "Profile", link: "/desarrollo/vistas/Profile" },
+              { text: "Run", link: "/desarrollo/vistas/Run" },
+              { text: "Alerts", link: "/desarrollo/vistas/Alerts" },
+            ],
+          },
+          {
             text: "Módulos",
             collapsed: true,
             items: [

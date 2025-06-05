@@ -1,3 +1,10 @@
-# `Alerts`
+# Alertas
+
+| Item     | Descripción                                            |
+| -------- | ------------------------------------------------------ |
+| Nombre   | `Alerts`                                               |
+| Ruta     | `/alerts`                                              |
+| Posición | `1`                                                    |
+| Ícono    | <span class="material-symbols-outlined">warning</span> |
 
 Lugar para ver y reportar alertas.

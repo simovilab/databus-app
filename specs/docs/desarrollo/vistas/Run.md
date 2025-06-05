@@ -1,4 +1,11 @@
-# `Run`
+# Carreras
+
+| Item     | Descripción                                                    |
+| -------- | -------------------------------------------------------------- |
+| Nombre   | `Run`                                                          |
+| Ruta     | `/run`                                                         |
+| Posición | `1`                                                            |
+| Ícono    | <span class="material-symbols-outlined">departure_board</span> |
 
 `if` no hay un viaje en progreso:
 

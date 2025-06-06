@@ -3,7 +3,7 @@
 | Item     | Descripción                                            |
 | -------- | ------------------------------------------------------ |
 | Nombre   | `Alerts`                                               |
-| Ruta     | `/alerts`                                              |
+| Ruta     | `/tabs/alerts`                                         |
 | Posición | `1`                                                    |
 | Ícono    | <span class="material-symbols-outlined">warning</span> |
 

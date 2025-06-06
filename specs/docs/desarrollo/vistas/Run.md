@@ -3,7 +3,7 @@
 | Item     | Descripción                                                    |
 | -------- | -------------------------------------------------------------- |
 | Nombre   | `Run`                                                          |
-| Ruta     | `/run`                                                         |
+| Ruta     | `/tabs/run`                                                    |
 | Posición | `1`                                                            |
 | Ícono    | <span class="material-symbols-outlined">departure_board</span> |
 

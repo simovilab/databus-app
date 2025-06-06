@@ -3,7 +3,7 @@
 | Item     | Descripción                                                   |
 | -------- | ------------------------------------------------------------- |
 | Nombre   | `Profile`                                                     |
-| Ruta     | `/profile`                                                    |
+| Ruta     | `/tabs/profile`                                               |
 | Posición | `0`                                                           |
 | Ícono    | <span class="material-symbols-outlined">account_circle</span> |
 

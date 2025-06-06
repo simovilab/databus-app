@@ -3,7 +3,7 @@
 | Item     | Descripción                                         |
 | -------- | --------------------------------------------------- |
 | Nombre   | `Home`                                              |
-| Ruta     | `/home`                                             |
+| Ruta     | `/tabs/home`                                        |
 | Posición | `0`                                                 |
 | Ícono    | <span class="material-symbols-outlined">home</span> |
 

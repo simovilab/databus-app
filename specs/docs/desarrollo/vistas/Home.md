@@ -25,3 +25,5 @@
 No utiliza componentes externos.
 
 ## Datos
+
+## Comportamiento

@@ -1,4 +1,4 @@
-# Componentes Vue
+# Descripción general de los componentes
 
 La información del servicio de transporte público en el sitio está clasificada en las siguientes categorías:
 

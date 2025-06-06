@@ -61,7 +61,7 @@ export default defineConfig({
             text: "Componentes",
             collapsed: true,
             items: [
-              { text: "Introducción", link: "/desarrollo/componentes/" },
+              { text: "Descripción general", link: "/desarrollo/componentes/" },
               { text: "LoginForm", link: "/desarrollo/componentes/LoginForm" },
               {
                 text: "AgencyVehicleSelector",
@@ -79,6 +79,7 @@ export default defineConfig({
             text: "Vistas",
             collapsed: true,
             items: [
+              { text: "Descripción general", link: "/desarrollo/vistas/" },
               { text: "Apertura", link: "/desarrollo/vistas/Splash" },
               { text: "Ingreso", link: "/desarrollo/vistas/Login" },
               { text: "Perfil", link: "/desarrollo/vistas/Profile" },

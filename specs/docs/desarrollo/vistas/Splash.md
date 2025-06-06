@@ -12,3 +12,9 @@
 - Logo de la aplicación
 - Nombre de la aplicación
 - Versión de la aplicación
+
+## Componentes
+
+## Datos
+
+## Comportamiento

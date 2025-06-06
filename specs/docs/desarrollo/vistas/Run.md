@@ -26,3 +26,11 @@ Si está configurada la carrera:
 `else`
 
 Algo
+
+## Anatomía
+
+## Componentes
+
+## Datos
+
+## Comportamiento

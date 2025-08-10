@@ -1,6 +1,6 @@
 # Model Context Protocol (MCP)
 
-## 1. Introduction
+## Introduction
 
 The Model Context Protocol (MCP) is an open standard that provides a unified framework for AI models to seamlessly connect with external data sources, tools, and services in real-time. 
 
@@ -12,7 +12,7 @@ With MCP, AI systems can:
 
 ---
 
-## 2. Core Architecture
+## Core Architecture
 
 MCP uses a **client–server model**:
 
@@ -25,7 +25,7 @@ This modular design allows adding or replacing servers without modifying the Hos
 
 ---
 
-## 3. How It Works
+## How It Works
 
 MCP relies on **JSON-RPC 2.0** for communication between Clients and Servers:
 

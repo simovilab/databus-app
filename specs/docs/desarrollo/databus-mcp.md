@@ -109,3 +109,4 @@ One of the  MCP tools is `get_next_trips`. It receives a GTFS stop ID and a time
 The server codebase is open source and available at the following repository:  
 [https://github.com/simovilab/infobus-mcp/tree/main/server](https://github.com/simovilab/infobus-mcp/tree/main/server)
 
+---

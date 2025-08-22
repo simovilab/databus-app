@@ -1,12 +1,12 @@
-# App Databús
+<img width="250" alt="databus" src="https://github.com/user-attachments/assets/b2ad45ac-83e5-44cf-a93e-898868763530" />
 
-Descripción de la aplicación móvil operativa del transporte público compatible con Databús®.
+# Operational Mobile App
 
-> Aplicación móvil operativa para choferes y despachadores de los vehículos de transporte público, para la recolección de datos de rastreo y telemetría en tiempo real de los viajes (carreras).
+Cross-platform mobile application for bus drivers, trip dispatchers and fleet operators to collect real-time vehicle telemetry, GPS tracking, and operational events.
 
-## Referencias
+## References
 
-(Trabajo en progreso)
+(Work in progress)
 
 - [Figma](https://www.figma.com/proto/ycNjVgCw07pfJcLdXdWEeK/bUCR?node-id=91-1859&t=x2cUCvlbCoUTnBEd-1): Prototipo de la aplicación móvil
 - [Google Sheets](https://docs.google.com/spreadsheets/d/1fmHEGEc7xYAvA4p_RRfGVPQrZNYWkDINNFxcZWkvaqI/edit?usp=sharing): Acciones y _endpoints_ de la API

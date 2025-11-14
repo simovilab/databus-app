@@ -21,6 +21,7 @@
     "@ionic/vue-router": "^8.0.0",
     "@vueuse/core": "^13.9.0",
     "ionicons": "^7.0.0",
+    "mqtt": "^5.14.1",
     "vue": "^3.3.0",
     "vue-router": "^4.2.0"
   },

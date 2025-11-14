@@ -3,7 +3,7 @@
 layout: home
 
 hero:
-  name: "Databús app"
+  name: "Databús App"
   text: "Aplicación móvil para rastreo y telemetría de autobuses"
   tagline: Especificación de las funcionalidades y características para el desarrollo de la aplicación.
   image:

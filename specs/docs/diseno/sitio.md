@@ -33,6 +33,8 @@ flowchart TD
     E[[End Trip]]
     A[[Trip Alerts]]
     G[Settings]
+    MM[[Messaging Menu]]
+    PM[[Profile Config]]
 
     S --> L
     L --> H
@@ -42,6 +44,8 @@ flowchart TD
     T <--> C
     T <--> E
     T <--> A
+    M <--> MM
+    P <--> PM
 
 ```
 

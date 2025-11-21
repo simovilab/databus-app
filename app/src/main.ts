@@ -33,11 +33,28 @@ import '@ionic/vue/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import { fetchInitialData } from './API_Fetch/Parent_Fetch';
 
 const app = createApp(App)
   .use(IonicVue)
   .use(router);
 
-router.isReady().then(() => {
-  app.mount('#app');
+router.isReady().then(async () => {
+  try {
+    const initialData = await fetchInitialData();
+    app.config.globalProperties.$initialData = initialData;
+    console.log('Initial data loaded', initialData.length);
+
+    for (let i = 0; i < initialData.length; i++) {
+      console.log(`Item ${i}:`, initialData[i]);
+    }
+  } catch (error) { 
+    if ((error as Error).name === 'AbortError') {
+      console.error('Initial data fetch aborted due to timeout');
+    } else {
+      console.error('Error fetching initial data:', error);
+    }
+  } finally {
+    app.mount('#app');
+  }
 });

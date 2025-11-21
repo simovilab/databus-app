@@ -71,3 +71,41 @@ flowchart TD
 flowchart TD
     S[[Modal]]
 ```
+## Especificaciones
+
+Elementos de entrada/salida a utilizar: [Ionic Framework](https://ionicframework.com/docs/api/input "Lista de elementos de interfaz que posee Ionic")
+
+- `Login`
+    - [Entrada de Texto](https://ionicframework.com/docs/api/input): ID de usuario.
+    - [Entrada de Texto](https://ionicframework.com/docs/api/input): Contraseña.
+    - [Botón](https://ionicframework.com/docs/api/button): Enlace para recuperar la contraseña.
+- `Home`
+    - [Lista](https://ionicframework.com/docs/api/infinite-scroll): Historial de viajes realizados.
+        - [Calendario](https://ionicframework.com/docs/api/datetime): Calendario que permita filtrar el historial de viajes por un rango de fechas.
+        - [Barra de Búsqueda](https://ionicframework.com/docs/api/searchbar): Entrada de texto que permita filtrar el historial de viajes por parámetros textuales.
+        - [Modal](https://ionicframework.com/docs/api/modal): Modal que despliegue los detalles del viaje seleccionado.
+        - [Texto](https://ionicframework.com/docs/api/content): Detalles textuales, específicos del viaje seleccionado.
+    - [Barra de Navegación](https://ionicframework.com/docs/api/tabs):
+        - `Perfil`
+            - [Botón](https://ionicframework.com/docs/api/button): Botón de navegación para la vista de Perfil de Usuario.
+                - [Modal](https://ionicframework.com/docs/api/modal): Modal que despliega la ventana de Perfil de Usuario.
+                    - [Texto](https://ionicframework.com/docs/api/content): Datos textuales del Usuario.
+                    - [Avatar](https://ionicframework.com/docs/api/avatar): Foto/Avatar del Usuario.
+        - `Viajes`
+            - [Botón](https://ionicframework.com/docs/api/button): Botón de navegación para la vista de Viajes.
+                - [Modal](https://ionicframework.com/docs/api/modal)
+                    - [Entradas de Texto](https://ionicframework.com/docs/api/input): Entradas de texto para ingresar los distintos parámetros necesarios para configurar y dar inicio a un nuevo viaje.
+                    - [Lista](https://ionicframework.com/docs/api/menu): Lista que despliega las rutas disponibles que puede seleccionar el usuario.
+                    - [Botón](https://ionicframework.com/docs/api/button): Botón de confirmación para comenzar un nuevo viaje.
+                - [Modal (alternativo)](https://ionicframework.com/docs/api/modal): En caso de existir un viaje actualmente en progreso.
+                    - [Texto](https://ionicframework.com/docs/api/content): Detalles textuales del viaje en progreso.
+                    - [Botón](https://ionicframework.com/docs/api/button): Botón para crear alertas sobre el viaje en progreso.
+                    - [Botón](https://ionicframework.com/docs/api/button): Botón para finalizar viaje.
+        - `Mensajes`
+            - [Botón](https://ionicframework.com/docs/api/button): Botón de navegación para la vista de Mensajes.
+                - [Notificación](https://ionicframework.com/docs/api/badge): Valor numérico en el botón que indica la presencia de notificaciones pendientes.
+                - [Modal](https://ionicframework.com/docs/api/modal)
+                    - [Lista](https://ionicframework.com/docs/api/infinite-scroll): Lista de notificaciones/mensajes recientes.
+
+
+    

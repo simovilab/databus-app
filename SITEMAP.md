@@ -2,7 +2,10 @@
 
 ## Objetivos principales
 
-1. Dispositivo de localización para rastreo y telemetría (_gateway_) de vehículos
+1. Dispositivo de localización para rastreo y telemetría de vehículos (podría funcionar como _gateway_ de otros sensores en el futuro)
+
+- Interfaz para despachadores y administradores de flotas
+
 1. Aplicación operativa (mensajería, reportes, alertas, comunicación interna)
 
 ## Canales y protocolos de comunicación
@@ -11,8 +14,10 @@
 - Bluetooth
 - Red celular
 
-- HTTP (REST/GraphQL API): eventos esporádicos (inicio de un viaje, una alerta, etc.)
-- TCP (MQTT): actualizaciones de alta frecuencia (rastreo y telemetría)
+### Protocolos de comunicación
+
+- HTTP (REST/GraphQL API): eventos esporádicos (inicio de un viaje, una alerta, etc.): _warm path_
+- TCP (MQTT): actualizaciones de alta frecuencia (rastreo y telemetría): _hot path_
 
 - Intermediador: tcp://mqtt.simovi.org:1883 (tcp://mqtt.databus.ucr.ac.cr:1883)
 
@@ -29,15 +34,10 @@ flowchart TD
       H([home])
       T([trips])
       M([messages])
+      P([profile])
     end
     subgraph home
-      subgraph home-index
-        HF[front page]
-        P[\profile/]
-        G[\settings/]
-      end
-      GC[[settings config]]
-      PC[[profile config]]
+      HF[front page]
     end
     subgraph trips
       subgraph trips-segments
@@ -58,10 +58,27 @@ flowchart TD
     end
     subgraph messages
       subgraph messages-segments
-        MM[messages]
-        MA[alerts]
-        MMD[/message details/]
-        MAD[/alert details/]
+        subgraph messages-index
+          MM[messages]
+        end
+        subgraph messages-alerts
+          MA[alerts]
+          MAD[/alert details/]
+        end
+      end
+    end
+    subgraph profile
+      subgraph profile-segments
+      subgraph profile-index
+        PP[profile]
+        PPB[\edit/]
+      end
+      subgraph profile-settings
+        PS[settings]
+        PSB[\edit/]
+      end
+      PSC[[settings config]]
+      PPC[[profile config]]
       end
     end
 
@@ -70,16 +87,16 @@ flowchart TD
     H --> home
     T --> trips
     M --> messages
+    P --> profile
 
-    P --> PC
-    G --> GC
+    PPB --> PPC
+    PSB --> PSC
 
     ST --> TC
     ET --> EC
     TA --> TAC
     TH --> THD
 
-    MM --> MMD
     MA --> MAD
 ```
 

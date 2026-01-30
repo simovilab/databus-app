@@ -12,7 +12,7 @@ Cross-platform mobile application for bus drivers, trip dispatchers and fleet op
 - [Google Sheets](https://docs.google.com/spreadsheets/d/1fmHEGEc7xYAvA4p_RRfGVPQrZNYWkDINNFxcZWkvaqI/edit?usp=sharing): Acciones y _endpoints_ de la API
 - [Databús API](https://databus.bucr.digital/api/docs/): Documentación de la API de Databús
 
-## Algo aquí
+## Architecture (sketch)
 
 ```mermaid
 flowchart TD
@@ -45,9 +45,9 @@ flowchart TD
   end
   subgraph PROFILE
     ProfileInfo
-subgraph PM[MODAL]
-EditProfile
-end
+  end
+  subgraph PM[MODAL]
+    EditProfile
   end
 
   Splash --> IsLoggedIn
@@ -61,5 +61,55 @@ end
   Profile --> PROFILE
 
   RunSetup --> RunProgress
-ProfileInfo --> EditProfile
+  ProfileInfo --> EditProfile
+```
+
+## How to
+This section explains how to install Node/npm on a Linux machine, install the project dependencies and run the app during.
+
+### 1) Install Node.js and npm
+
+Linux 
+```bash
+sudo apt-get install -y nodejs
+node -v
+npm -v
+```
+
+MacOS
+```bash
+brew update
+brew install node
+node -v
+npm -v
+```
+
+Windows 
+```bash
+Download the official installer from the Node.js website.
+
+Run the installer and follow the setup steps.
+
+node -v
+npm -v
+```
+
+### 2) Install project dependencies
+Open a terminal at the project app folder and install packages:
+
+```bash
+cd /path/to/databus-app/app
+npm install
+```
+
+### 3) Run the dev server
+
+```bash
+npm run dev
+```
+
+### 4) Build project
+
+```bash
+npm run build
 ```

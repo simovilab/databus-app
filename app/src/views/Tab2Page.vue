@@ -153,7 +153,7 @@ const recorridosDisponibles = [
 /* X clear btn */
 .clear-btn {
   position: absolute;
-  right: 30px; /* Lo ponemos a la izquierda de la flechita del select */
+  right: 30px;
   top: 0;
   bottom: 0;
   margin: auto;

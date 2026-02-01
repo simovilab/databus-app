@@ -3,6 +3,7 @@
     <ion-header>
       <ion-toolbar>
         <ion-title>Tab 3</ion-title>
+        <ThemeToggle />
       </ion-toolbar>
     </ion-header>
     <ion-content :fullscreen="true">
@@ -20,4 +21,5 @@
 <script setup lang="ts">
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent } from '@ionic/vue';
 import ExploreContainer from '@/components/ExploreContainer.vue';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 </script>

@@ -3,6 +3,7 @@
     <ion-header>
       <ion-toolbar>
         <ion-title>Viajes</ion-title>
+        <ThemeToggle />
       </ion-toolbar>
     </ion-header>
     <ion-content :fullscreen="true">
@@ -29,4 +30,5 @@
 
 <script setup lang="ts">
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonSegment, IonSegmentButton, IonLabel, IonSegmentView, IonSegmentContent } from '@ionic/vue';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 </script>

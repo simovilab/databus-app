@@ -8,6 +8,7 @@
             <strong>Hola, José Castro</strong>
           </div>
         </ion-title>
+        <ThemeToggle />
       </ion-toolbar>
     </ion-header>
 
@@ -79,4 +80,5 @@ import {
   IonCardContent,
 } from "@ionic/vue";
 import bAzul from '@/assets/icons/b_azul.png';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 </script>

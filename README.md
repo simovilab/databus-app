@@ -71,7 +71,7 @@ This section explains how to install Node/npm on a Linux machine, install the pr
 
 Linux 
 ```bash
-sudo apt-get install -y nodejs
+sudo apt-get install -y nodejs npm
 node -v
 npm -v
 ```

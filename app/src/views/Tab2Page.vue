@@ -86,11 +86,41 @@
         </div>
 
         <div style="display: flex; justify-content: center;">
-            <ion-button shape="round" color="success" style="--background: #66bb6a; width: 200px; height: 50px; text-transform: none; font-weight: 600;">
+            <ion-button 
+              shape="round" 
+              color="success" 
+              style="--background: #66bb6a; width: 200px; height: 50px; text-transform: none; font-weight: 600;"
+              @click="setModalOpen(true)"
+              :disabled="!rutaSeleccionada || !recorridoSeleccionado"
+            >
               <ion-icon slot="start" :icon="busOutline"></ion-icon>
               Comenzar viaje
             </ion-button>
-          </div>
+        </div>
+
+        <ion-modal :is-open="isModalOpen" :backdrop-dismiss="false">
+          <ion-content class="ion-text-center">
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 20px;">
+              
+              <div style="background-color: #e8f5e9; padding: 30px; border-radius: 50%; margin-bottom: 20px;">
+                <ion-icon :icon="busOutline" style="font-size: 64px; color: #66bb6a;"></ion-icon>
+              </div>
+
+              <h2 style="font-weight: bold; margin-bottom: 5px;">Viaje en progreso</h2>
+              
+              <p class="ion-text-medium" style="margin-top: 0; color: var(--ion-color-medium);">
+                {{ rutaSeleccionada }} <br> {{ recorridoSeleccionado }}
+              </p>
+
+              <div style="margin-top: 40px; width: 100%;">
+                <ion-button expand="block" color="danger" shape="round" @click="setModalOpen(false)">
+                  Finalizar Viaje
+                </ion-button>
+              </div>
+
+            </div>
+          </ion-content>
+        </ion-modal>
 
       </div>
 
@@ -110,7 +140,8 @@ import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
   IonSegment, IonSegmentButton, IonLabel, 
   IonIcon, IonButton,
-  IonSelect, IonSelectOption 
+  IonSelect, IonSelectOption,
+  IonModal // Importamos el Modal
 } from '@ionic/vue';
 import { 
   closeCircleOutline, 
@@ -121,6 +152,11 @@ import ThemeToggle from '@/components/ThemeToggle.vue';
 const selectedTab = ref('first');
 const rutaSeleccionada = ref('');
 const recorridoSeleccionado = ref('');
+const isModalOpen = ref(false); // Variable de control para el modal
+
+const setModalOpen = (isOpen: boolean) => {
+  isModalOpen.value = isOpen;
+};
 
 // Ruta data
 const rutasDisponibles = [
@@ -133,12 +169,10 @@ const rutasDisponibles = [
 const recorridosDisponibles = [
   'Bus interno UCR ida',
   'Bus interno UCR vuelta',
-
 ];
 </script>
 
 <style scoped>
-
 .input-wrapper {
   position: relative;
   width: 100%;

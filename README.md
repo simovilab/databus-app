@@ -113,3 +113,14 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## Testing
+
+The tests documentation can be found in the following path of the project. There you can find more information about them.
+
+```sh
+/tests/unit
+```
+
+> [!NOTE]
+> Consider adding robust guideliness for testing. It is a good practice and usually recommended in any project.

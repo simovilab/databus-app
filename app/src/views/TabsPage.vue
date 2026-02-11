@@ -9,7 +9,7 @@
           <ion-label>Inicio</ion-label>
         </ion-tab-button>
 
-        <ion-tab-button tab="tab2" href="/tabs/tab2">
+        <ion-tab-button tab="run" href="/tabs/run">
           <ion-icon :icon="bus" />
           <ion-label>Viajes</ion-label>
         </ion-tab-button>

@@ -98,6 +98,17 @@ describe('Router', () => {
     expect(router.currentRoute.value.path).toBe('/tabs/tab4');
   });
 
+  it('should have run route', () => {
+    const routes = router.getRoutes();
+    const runRoute = routes.find(route => route.path === '/tabs/run');
+    expect(runRoute).toBeDefined();
+  });
+
+  it('should navigate to run', async () => {
+    await router.push('/tabs/run');
+    expect(router.currentRoute.value.path).toBe('/tabs/run');
+  });
+
   it('should navigate from root to tab1', async () => {
     await router.push('/');
     // Router should redirect to /tabs/tab1

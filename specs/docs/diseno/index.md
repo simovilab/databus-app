@@ -10,10 +10,6 @@ La especificación del suministro de datos abiertos de transporte público (GTFS
 
 ### OTDS
 
-_Open Text Directory Services_ (OTDS) es un sistema centralizado de gestión de identitades y accesos (IAM) para aplicaciones de OpenText. Funciona como un repositorio único para datos de usuarios y grupos. 
-
-- Más información: [OTDS](https://developer.opentext.com/ce/products/opentext-directory-services/documentation/directory-services-otds)
-
 ### ARC-IT
 
 La referencia de arquitectura de transporte inteligente y colaborativo del Departamento de Transporte de los Estados Unidos (ARC-IT, _Architecture Reference for Cooperative and Intelligent Transportation_) es un modelo exhaustivo de los sistemas tecnológicos del transporte inteligente, desarrollado desde distintas perspectivas. ARC-IT establece objetos, funcionalidades, relaciones, estándares y una gran cantidad de información de referencia. En este proyecto es utilizado para ayudar a establecer los componentes (como servidores y otros dispositivos) y sus flujos de información, conocidos como "tripletas" de fuente, mensaje y destino.
@@ -22,15 +18,7 @@ La referencia de arquitectura de transporte inteligente y colaborativo del Depar
 
 ### OpenAPI
 
-La especificación OpenAPI es un estándar abierto para definir y describir APIs. Permite descibir las capacidades de una API como endpoints, formatos de solicitud/respuesta, métodos de autenticación y manejo de errores. Estas especificaciones se pueden realizar con formatos YAML o JSON, lo que permite que la especificación pueda ser consumida por cualquier lenguaje de programación o framework.
-
-- Más información: [OpenAPI](https://www.openapis.org/what-is-openapi)
-
 ### MCP
-
-La especificación de _Model Context Protocol_ (MCP) es un protocolo abierto que estandariza cómo aplicaciones proveen contexto a grandes modelos de lenguaje (LLMs). MCP provee un método estandarizado para conectar modelos de IA con diferentes fuentes de datos y herramientas. Con ayuda de esta herramienta, se pueden integrar agentes de IA en una aplicación, tales como asistentes o chatbots.
-
-- Más información: [MCP](https://modelcontextprotocol.io/introduction)
 
 ### Smart Data Models
 

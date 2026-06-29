@@ -34,7 +34,7 @@ flowchart TD
       H([home])
       T([trips])
       M([messages])
-      P([profile])
+      P([user])
     end
     subgraph home
       HF[front page]
@@ -67,18 +67,23 @@ flowchart TD
         end
       end
     end
-    subgraph profile
-      subgraph profile-segments
-      subgraph profile-index
-        PP[profile]
-        PPB[\edit/]
-      end
-      subgraph profile-settings
-        PS[settings]
-        PSB[\edit/]
-      end
+    subgraph user
+      subgraph user-segments
+        subgraph user-index
+          PP[user]
+          PPB[\edit/]
+        end
+        subgraph user-settings
+          PS[settings]
+          PSB[\edit/]
+        end
+        subgraph user-profiles
+          PPr[profile]
+          PPrB[\edit/]
+        end
       PSC[[settings config]]
-      PPC[[profile config]]
+      PPC[[user config]]
+      PPrC[[profile config]]
       end
     end
 
@@ -87,11 +92,11 @@ flowchart TD
     H --> home
     T --> trips
     M --> messages
-    P --> profile
+    P --> user
 
     PPB --> PPC
     PSB --> PSC
-
+    PPrB --> PPrC
     ST --> TC
     ET --> EC
     TA --> TAC
@@ -179,3 +184,55 @@ Elementos de entrada/salida a utilizar: [Ionic Framework](https://ionicframework
         - [Notificación](https://ionicframework.com/docs/api/badge): Valor numérico en el botón que indica la presencia de notificaciones pendientes.
         - [Modal](https://ionicframework.com/docs/api/modal)
           - [Lista](https://ionicframework.com/docs/api/infinite-scroll): Lista de notificaciones/mensajes recientes.
+
+## Acciones
+
+1. Crear cuenta de usuario
+
+- No tiene permisos de nada
+- Entra con Apple o Google o correo electrónico (_fallback_ para usar las mismas credenciales institucionales)
+
+2. Autorización de usuario (creación de "perfil" con autorización institucional)
+
+- Solicitar credenciales institucionales (correo electrónico o nombre de usuario y contraseña)
+- Utilizar esas credenciales para hacer la autenticación con el servidor de la UCR (LDAP)
+- Un perfil por cada inquilino (_tenant_)
+
+3. Iniciar sesión
+
+- Si es la primera vez:
+  - Crear perfil institucional
+- Si no es la primera vez:
+  - Nada
+
+4. Iniciar viaje
+
+- Seleccionar ruta
+- Seleccionar vehículo (pre-cargado de sesión anterior)
+- Seleccionar conductor (pre-cargado de sesión anterior)
+- Seleccionar tipo de viaje ([`ScheduleRelationship`](https://gtfs.org/documentation/realtime/reference/#enum-schedulerelationship_1))
+- Si es `SCHEDULED`:
+  - Seleccionar hora de inicio de la lista de trips.txt de GTFS Schedule
+- Si es `ADDED`:
+- Si es `CANCELED`:
+- Si es `REPLACEMENT`:
+- Si es `DUPLICATED`
+- Si es `NEW`:
+- Si es `DELETED`:
+- Si es `UNSCHEDULED`:
+  - Seleccionar hora de inicio manualmente
+
+5. Finalizar viaje
+
+- Si es `COMPLETED`:
+  - Registrar hora de finalización (automáticamente)
+- Si es `INTERRUPTED`:
+  - Registrar hora de finalización (manualmente)
+  - Llenar los campos necesarios para crear una GTFS Realtime Service Alert. Nota: siempre un viaje interrumpido genera una alerta de servicio.
+- Si es `SHORT_TURNED`:
+  - Registrar hora de finalización (manualmente)
+  - (Posiblemente) Llenar los campos de un nuevo viaje.
+
+6. Crear alerta
+
+- Llenar los campos necesarios para crear una GTFS Realtime Service Alert.

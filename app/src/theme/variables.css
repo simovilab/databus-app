@@ -1,2 +1,139 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+/* Databús design tokens.
+   For background on how these map onto Ionic components, see:
+   http://ionicframework.com/docs/theming/
+
+   Brand colors sampled from the Databús wordmark (README.md logo): a green
+   accent bar (#6dc067) under a black "databús" mark. Shades/tints below are
+   generated with Ionic's standard formula (shade = rgb * 0.9, tint = mix
+   10% toward white) — see Ionic's theme color generator. */
+
+:root {
+  /** primary — Databús green **/
+  --ion-color-primary: #6dc067;
+  --ion-color-primary-rgb: 109, 192, 103;
+  --ion-color-primary-contrast: #000000;
+  --ion-color-primary-contrast-rgb: 0, 0, 0;
+  --ion-color-primary-shade: #60a95b;
+  --ion-color-primary-tint: #7cc676;
+
+  /** secondary — near-black, from the wordmark **/
+  --ion-color-secondary: #1f2421;
+  --ion-color-secondary-rgb: 31, 36, 33;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #1c201e;
+  --ion-color-secondary-tint: #363b38;
+
+  /** tertiary — transit blue accent for links/info **/
+  --ion-color-tertiary: #2f6fed;
+  --ion-color-tertiary-rgb: 47, 111, 237;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade: #2a62d1;
+  --ion-color-tertiary-tint: #457ef0;
+
+  /** success **/
+  --ion-color-success: #2dd36f;
+  --ion-color-success-rgb: 45, 211, 111;
+  --ion-color-success-contrast: #000000;
+  --ion-color-success-contrast-rgb: 0, 0, 0;
+  --ion-color-success-shade: #28ba62;
+  --ion-color-success-tint: #42d77d;
+
+  /** warning **/
+  --ion-color-warning: #ffc409;
+  --ion-color-warning-rgb: 255, 196, 9;
+  --ion-color-warning-contrast: #000000;
+  --ion-color-warning-contrast-rgb: 0, 0, 0;
+  --ion-color-warning-shade: #e0ac08;
+  --ion-color-warning-tint: #ffca22;
+
+  /** danger **/
+  --ion-color-danger: #eb445a;
+  --ion-color-danger-rgb: 235, 68, 90;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #cf3c4f;
+  --ion-color-danger-tint: #ed576b;
+
+  /** dark **/
+  --ion-color-dark: #1f2421;
+  --ion-color-dark-rgb: 31, 36, 33;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-contrast-rgb: 255, 255, 255;
+  --ion-color-dark-shade: #1c201e;
+  --ion-color-dark-tint: #363b38;
+
+  /** medium **/
+  --ion-color-medium: #6a6f6d;
+  --ion-color-medium-rgb: 106, 111, 109;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #5d6260;
+  --ion-color-medium-tint: #797e7b;
+
+  /** light **/
+  --ion-color-light: #f4f6f5;
+  --ion-color-light-rgb: 244, 246, 245;
+  --ion-color-light-contrast: #000000;
+  --ion-color-light-contrast-rgb: 0, 0, 0;
+  --ion-color-light-shade: #d7d9d8;
+  --ion-color-light-tint: #f5f7f6;
+
+  /** ---- app-specific spacing / radius tokens ----
+   * Feature agents should use these instead of hardcoding px values,
+   * so spacing stays consistent across A3/A4 pages. */
+  --app-spacing-xs: 4px;
+  --app-spacing-sm: 8px;
+  --app-spacing-md: 16px;
+  --app-spacing-lg: 24px;
+  --app-spacing-xl: 32px;
+
+  --app-radius-sm: 4px;
+  --app-radius-md: 8px;
+  --app-radius-lg: 16px;
+}
+
+/*
+ * Dark mode.
+ * Ionic auto-detects the system color scheme (see main.ts, which imports
+ * `@ionic/vue/css/palettes/dark.system.css`). Override background/text
+ * tokens here; brand colors above stay the same in both modes so the
+ * Databús green keeps its identity.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ion-color-primary-contrast: #000000;
+    --ion-color-primary-contrast-rgb: 0, 0, 0;
+
+    --ion-background-color: #121412;
+    --ion-background-color-rgb: 18, 20, 18;
+    --ion-text-color: #f4f6f5;
+    --ion-text-color-rgb: 244, 246, 245;
+
+    --ion-color-step-50: #1a1c1a;
+    --ion-color-step-100: #212422;
+    --ion-color-step-150: #292c2a;
+    --ion-color-step-200: #313432;
+    --ion-color-step-250: #393c3a;
+    --ion-color-step-300: #414442;
+    --ion-color-step-350: #494c4a;
+    --ion-color-step-400: #515452;
+    --ion-color-step-450: #595c5a;
+    --ion-color-step-500: #626462;
+    --ion-color-step-550: #6f716f;
+    --ion-color-step-600: #7c7e7c;
+    --ion-color-step-650: #898b89;
+    --ion-color-step-700: #969896;
+    --ion-color-step-750: #a3a5a3;
+    --ion-color-step-800: #b0b2b0;
+    --ion-color-step-850: #bdbfbd;
+    --ion-color-step-900: #cacccb;
+    --ion-color-step-950: #d7d9d8;
+
+    --ion-item-background: #1a1c1a;
+    --ion-toolbar-background: #1a1c1a;
+    --ion-tab-bar-background: #1a1c1a;
+    --ion-card-background: #1a1c1a;
+  }
+}

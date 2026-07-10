@@ -1,10 +1,11 @@
-// BOOTSTRAP — owned by Agent A2 per master-plan §9 (`types/*`).
-// This file transcribes the FROZEN contract from master-plan §6.1 verbatim
-// so `stores/auth.ts` (also a bootstrap, see that file) and `router/index.ts`
-// (Agent A1) have real types to compile against. A2 owns this file going
-// forward and may extend it, but must not break these signatures without
-// updating §6.1 in the same change (master-plan §9 conflict-avoidance rule).
+// Domain types — the frozen shapes from master-plan.md §6.1.
+// Do not change these signatures without updating plans/master-plan.md §6 in
+// the same change (see plans/agents/agent-2-data-layer.md "Rules").
 
+/**
+ * Run lifecycle states, verified against
+ * ../databus/backend/runs/domain/lifecycle/states.py (RunLifecycleStates).
+ */
 export type RunState =
   | 'Requested'
   | 'Validated'
@@ -18,6 +19,7 @@ export type RunState =
   | 'Interrupted'
   | 'Short Turned';
 
+/** Authenticated operator session, persisted via @capacitor/preferences. */
 export interface Session {
   token: string;
   operatorId: string;
@@ -25,6 +27,7 @@ export interface Session {
   lastName: string;
 }
 
+/** The run currently owned by this device/operator. */
 export interface ActiveRun {
   runId: string;
   vehicleId: string;
@@ -35,10 +38,11 @@ export interface ActiveRun {
   state: RunState;
 }
 
+/** A single GPS sample, ready to publish to the telemetry broker. */
 export interface Fix {
   latitude: number;
   longitude: number;
   bearing?: number;
   speed?: number;
-  timestamp?: number;
+  timestamp?: number; // unix epoch seconds
 }

@@ -1,20 +1,12 @@
-// BOOTSTRAP — owned by Agent A2 per master-plan §9 (`stores/*`).
-//
-// A1 (app shell) added this minimal implementation only so the global
-// router guard (src/router/index.ts) and `npm run dev` have a real
-// `useAuthStore()` to compile and run against — the shell's Definition of
-// Done requires the app to actually navigate Splash -> Login -> Tabs, which
-// is impossible without *some* store existing at this path.
-//
-// This matches the FROZEN signature in master-plan §6.2 exactly:
-//   session, isAuthenticated, login(), logout(), loadFromStorage()
-// A2 replaces the body with the real implementation (POST /api/login/ via
-// services/apiClient.ts, Capacitor Preferences persistence per §3.1) without
-// changing the public shape, so nothing that imports this store should need
-// to change when A2 lands the real version.
+// Auth store (Pinia setup store, master §6.2). Persists the session via
+// @capacitor/preferences (JSON-encoded) — verified via /find-docs against
+// /ionic-team/capacitor-docs (Preferences.set/get/remove).
+
+import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { Preferences } from '@capacitor/preferences';
-import { computed, ref } from 'vue';
+import { apiPost } from '@/services/apiClient';
+import type { LoginResponse } from '@/types/api';
 import type { Session } from '@/types/domain';
 
 const STORAGE_KEY = 'databus.session';
@@ -24,10 +16,15 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => session.value !== null);
 
   async function login(username: string, password: string): Promise<void> {
-    // Real implementation (A2): POST /api/login/ via services/apiClient.ts,
-    // then persist the returned Session via Preferences.
-    if (!username || !password) throw new Error('Username and password are required.');
-    throw new Error(`Not implemented: Agent A2 wires up login for "${username}" to POST /api/login/.`);
+    const response = await apiPost<LoginResponse>('/login/', { username, password });
+    const newSession: Session = {
+      token: response.token,
+      operatorId: response.operator_id,
+      firstName: response.first_name,
+      lastName: response.last_name,
+    };
+    session.value = newSession;
+    await Preferences.set({ key: STORAGE_KEY, value: JSON.stringify(newSession) });
   }
 
   async function logout(): Promise<void> {
@@ -37,10 +34,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function loadFromStorage(): Promise<void> {
     const { value } = await Preferences.get({ key: STORAGE_KEY });
-    if (!value) return;
+    if (!value) {
+      return;
+    }
     try {
       session.value = JSON.parse(value) as Session;
     } catch {
+      // Corrupt storage value — treat as logged out rather than throwing
+      // during app boot.
       session.value = null;
     }
   }

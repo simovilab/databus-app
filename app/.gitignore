@@ -30,3 +30,9 @@ npm-debug.log*
 /platforms
 /plugins
 /www
+
+# Local environment overrides — never commit secrets/broker config.
+# .env.example stays tracked as the template.
+.env
+.env.local
+.env.*.local

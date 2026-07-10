@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
-  appName: 'databus-app',
+  appId: 'org.simovi.databus.app',
+  appName: 'Databús',
   webDir: 'dist'
 };
 

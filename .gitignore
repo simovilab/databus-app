@@ -36,3 +36,7 @@ npm-debug.log*
 site/
 # Claude Code agent worktrees / local state
 .claude/
+
+# Cypress artifacts
+app/tests/e2e/screenshots/
+app/tests/e2e/videos/

@@ -34,3 +34,5 @@ npm-debug.log*
 # Zensical
 
 site/
+# Claude Code agent worktrees / local state
+.claude/

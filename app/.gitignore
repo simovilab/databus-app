@@ -29,6 +29,8 @@ npm-debug.log*
 /node_modules
 /platforms
 /plugins
+# ...but keep our own custom Capacitor plugin source tracked (A5 telemetry plugin).
+!/plugins/capacitor-databus-telemetry
 /www
 
 # Local environment overrides — never commit secrets/broker config.

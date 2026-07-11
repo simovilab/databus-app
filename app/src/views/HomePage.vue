@@ -7,6 +7,7 @@
     </ion-header>
     <ion-content class="ion-padding">
       <section class="home-greeting">
+        <BrandLogo variant="auto" height="34px" class="home-greeting__logo" />
         <h1 class="home-greeting__heading">Hola, {{ firstName }}</h1>
         <p class="home-greeting__sub">¿Qué harás hoy?</p>
       </section>
@@ -86,6 +87,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import RunHistoryList from '@/components/runs/RunHistoryList.vue';
+import BrandLogo from '@/components/ui/BrandLogo.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRunStore } from '@/stores/run';
 import { useRunHistoryStore } from '@/stores/runHistory';
@@ -117,6 +119,10 @@ function goToRuns(): void {
 <style scoped>
 .home-greeting {
   margin: var(--app-spacing-md, 16px) 0 var(--app-spacing-lg, 24px);
+}
+
+.home-greeting__logo {
+  margin-bottom: var(--app-spacing-md, 16px);
 }
 
 .home-greeting__heading {

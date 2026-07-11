@@ -80,7 +80,6 @@ export const PALETTES: readonly Palette[] = [
     background: '#eef4ee',
     backgroundDark: '#0d1710',
   },
-  // --- Nuevas paletas agregadas ---
   {
     id: 'breeze',
     name: 'Brisa',
@@ -107,6 +106,15 @@ export const PALETTES: readonly Palette[] = [
     tertiary: '#e3e0cc', // warm beige
     background: '#f0f0f0',
     backgroundDark: '#181a18',
+  },
+  {
+    id: 'storm',
+    name: 'Tormenta',
+    primary: '#4B6864', 
+    secondary: '#4B4F68', 
+    tertiary: '#4B5E68', 
+    background: '#eff2f1', // Tono gris claro perlado/verdoso
+    backgroundDark: '#121415', // Tono gris oscuro casi negro, ligeramente frío
   },
 ];
 

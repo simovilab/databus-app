@@ -2,10 +2,8 @@
   <ion-page>
     <ion-content :fullscreen="true" class="splash-content">
       <div class="splash-brand">
-        <h1 class="splash-brand__wordmark">
-          Data<span class="splash-brand__accent">bús</span>
-        </h1>
-        <p class="splash-brand__tagline">Operador</p>
+        <BrandLogo variant="light" height="64px" class="splash-brand__logo" />
+        <p class="splash-brand__tagline">App</p>
         <AppLoading message="Iniciando…" />
       </div>
     </ion-content>
@@ -22,6 +20,7 @@ import { IonContent, IonPage } from '@ionic/vue';
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import AppLoading from '@/components/ui/AppLoading.vue';
+import BrandLogo from '@/components/ui/BrandLogo.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
@@ -50,16 +49,8 @@ onMounted(() => {
   gap: var(--app-spacing-sm, 8px);
 }
 
-.splash-brand__wordmark {
-  margin: 0;
-  font-size: 2.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ion-color-light);
-}
-
-.splash-brand__accent {
-  color: var(--ion-color-primary);
+.splash-brand__logo {
+  margin: 0 auto;
 }
 
 .splash-brand__tagline {

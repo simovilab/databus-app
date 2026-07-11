@@ -3,10 +3,8 @@
     <ion-content :fullscreen="true" class="login-content">
       <div class="login-shell">
         <header class="login-brand">
-          <h1 class="login-brand__wordmark">
-            Data<span class="login-brand__accent">bús</span>
-          </h1>
-          <p class="login-brand__tagline">Operador</p>
+          <BrandLogo variant="light" height="56px" class="login-brand__logo" />
+          <p class="login-brand__tagline">App</p>
         </header>
 
         <form class="login-form" novalidate @submit.prevent="submit">
@@ -88,6 +86,7 @@ import { IonButton, IonContent, IonInput, IonPage, IonSpinner } from '@ionic/vue
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppError from '@/components/ui/AppError.vue';
+import BrandLogo from '@/components/ui/BrandLogo.vue';
 import { useAuthStore } from '@/stores/auth';
 import { ApiError } from '@/services/apiClient';
 
@@ -162,19 +161,14 @@ async function submit(): Promise<void> {
 }
 
 .login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
 }
 
-.login-brand__wordmark {
-  margin: 0;
-  font-size: 2.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ion-color-light);
-}
-
-.login-brand__accent {
-  color: var(--ion-color-primary);
+.login-brand__logo {
+  margin: 0 auto;
 }
 
 .login-brand__tagline {

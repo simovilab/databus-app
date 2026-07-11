@@ -129,7 +129,10 @@ full detail):
   terminal-stop event (fired by the realtime engine at the trip terminal). The
   operator's manual "End run" sends `run_interrupted` (when the bus is already
   under way) or `cancel_run` (before it moves), each with
-  `details.actor_role="operator"`.
+  `details.actor_role="operator"`. Because a run can finish without an operator
+  action, the app records history whenever it **observes** any terminal state
+  (`Completed`/`Cancelled`/`Interrupted`/`Short Turned`) — via the manual end
+  *or* via the ~5s state poll — so system-completed runs still appear in history.
 - **One active run per operator.** The backend binds an operator/vehicle/trip to
   a run until it reaches a terminal state; a second create-run for the same
   operator is rejected. The app surfaces the backend's real reason.
@@ -161,7 +164,9 @@ OS-backed storage on native):
   `GET /runs/<id>/state/`: entries whose run 404s are pruned, survivors have
   their final state refreshed. History therefore only shows runs that still
   exist in the DB.
-- **Settings** (`databus.settings`) — device-local preferences.
+- **Settings** (`databus.settings`) — device-local preferences (display-name
+  override, background-telemetry / keep-screen-on toggles, language, and the
+  chosen color palette).
 
 Stores are rehydrated in `main.ts` **before the router is installed**, so a cold
 start (native) or refresh (web) restores the session before the auth guard runs.
@@ -170,6 +175,34 @@ start (native) or refresh (web) restores the session before the auth guard runs.
 > if the OS kills a backgrounded native app mid-run) the Runs tab shows "no
 > active run" even though it is live server-side. Resuming it needs a backend
 > "operator's current run" endpoint — see `DATABUS_INTEGRATION.md`.
+
+### Theming & color palettes
+
+The operator can recolor the whole app from **Usuario → Ajustes → Tema**. A
+palette is just 3 brand colors plus a light/dark page background, defined in
+`src/theme/palettes.ts`:
+
+```ts
+{ id: 'ocean', name: 'Océano',
+  primary: '#0a84ff', secondary: '#0b1f33', tertiary: '#30c8c9',
+  background: '#eef4fb', backgroundDark: '#0a1420' }
+```
+
+That's all you author — `src/theme/applyPalette.ts` derives the full set of
+Ionic CSS variables (`-rgb` / `-contrast` / `-shade` / `-tint` for each stepped
+color, using Ionic's own formulas) plus the surrounding surface tokens
+(item / card / toolbar / tab-bar backgrounds and text color) from the chosen
+background, and writes them onto `:root` at runtime — so a palette recolors the
+app with **no rebuild**. The pick is persisted in settings, applied on boot
+before first paint, and re-applied live when the OS light/dark preference
+changes. **To add a palette, append one entry to `PALETTES`** — nothing else.
+
+### Branding
+
+The Databús wordmark and "b" mark live in `public/logo/`. `BrandLogo.vue`
+renders the wordmark with `dark` / `light` / `auto` variants (auto follows the
+OS color scheme so it stays legible on themed surfaces); it's used on the
+Splash, Login and Home screens. The "b" mark is the favicon and iOS touch icon.
 
 ---
 
@@ -242,7 +275,7 @@ npm run build         # vue-tsc typecheck + vite build
 npm run test:e2e      # cypress (e2e) — needs the dev server running
 ```
 
-Current status: **lint clean · 78 unit tests · typecheck + build green.**
+Current status: **lint clean · 90 unit tests · typecheck + build green.**
 
 ### Testing the full run lifecycle
 
@@ -287,15 +320,18 @@ app/
       trips/          # TripSetupModal (run wizard), RunProgress
       runs/           # RunHistoryList, RunDetailsModal
       user/           # ProfileEditModal
-      ui/             # AppError, AppLoading, EmptyState
+      ui/             # AppError, AppLoading, EmptyState, BrandLogo
     stores/           # Pinia: auth, run, runHistory, settings
     services/
       apiClient.ts    # typed fetch wrapper (Token auth, error envelopes)
       schedule.ts     # GTFS/run REST lookups
       geolocation.ts  # GPS watcher (Capacitor native / browser fallback)
       telemetry/      # TelemetryRuntime seam + web & native implementations
+    theme/            # variables.css + palettes.ts + applyPalette.ts (theming)
     types/            # api.ts (wire types), domain.ts (app types)
     router/           # routes + auth guard
+  public/
+    logo/             # Databús wordmark (dark/light) + "b" mark; favicon
   plugins/
     capacitor-databus-telemetry/   # native TCP+TLS MQTT plugin (Kotlin + Swift)
   tests/
@@ -320,7 +356,8 @@ DATABUS_INTEGRATION.md# backend contract + open asks for the databus team
       scope for this milestone).
 - [ ] **Native device validation (M-native)** — build on device, exercise the
       TCP+TLS + background + store-and-forward path end-to-end.
-- [ ] **i18n** — the language setting exists but strings are not yet extracted.
+- [ ] **i18n** — the language setting is persisted but not yet wired: UI strings
+      are hard-coded Spanish and not extracted, so changing it has no effect yet.
 
 **Needs the Databús team** (details + rationale in
 [`DATABUS_INTEGRATION.md`](./DATABUS_INTEGRATION.md))

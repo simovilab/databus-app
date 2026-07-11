@@ -118,7 +118,8 @@ describe('apiClient', () => {
   });
 
   it('throws when VITE_API_BASE_URL is not configured', async () => {
-    vi.unstubAllEnvs();
+    // Force empty (unstubAllEnvs would restore a local .env value, hiding this).
+    vi.stubEnv('VITE_API_BASE_URL', '');
     await expect(apiGet('/routes/')).rejects.toThrow('VITE_API_BASE_URL');
   });
 });

@@ -31,7 +31,8 @@ describe('createTelemetryPublisher (mqtt.js over WebSocket)', () => {
   });
 
   it('throws when no URL is configured and none is passed explicitly', () => {
-    vi.unstubAllEnvs();
+    // Force empty (unstubAllEnvs would restore a local .env value, hiding this).
+    vi.stubEnv('VITE_MQTT_URL', '');
     expect(() => createTelemetryPublisher()).toThrow('VITE_MQTT_URL');
   });
 

@@ -1,2 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Telemetry foreground service — keeps GPS + MQTT publishing alive while
+      the app is backgrounded / the screen is locked (master plan §8 R6).
+      android:foregroundServiceType="location" is required on Android 14+
+      (API 34) for a typed foreground service that accesses location. The app
+      must also hold ACCESS_BACKGROUND_LOCATION + ACCESS_FINE_LOCATION and
+      request them at runtime — see app/NATIVE-PERMISSIONS.md.
+    -->
+    <application>
+        <service
+            android:name="org.simovi.databus.telemetry.TelemetryService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+    </application>
 </manifest>

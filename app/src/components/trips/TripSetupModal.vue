@@ -394,8 +394,13 @@ async function onConfirm(): Promise<void> {
     await runStore.createRun(input);
     emit('dismissed');
   } catch (err) {
-    if (isCreateRunError(err) && err.step) {
-      error.value = new Error(`Create run failed at step "${err.step}".`);
+    if (isCreateRunError(err)) {
+      // Surface the backend's actual reason (e.g. "Operator 'op-demo' is
+      // already assigned to run …") instead of the opaque validation step.
+      const detail = extractApiErrorDetail(err);
+      error.value = new Error(
+        detail ?? `Could not start the run (step "${err.step ?? 'unknown'}").`,
+      );
     } else if (err instanceof Error) {
       error.value = err;
     } else {
@@ -404,6 +409,26 @@ async function onConfirm(): Promise<void> {
   } finally {
     busy.value = false;
   }
+}
+
+/**
+ * Flatten an ApiError's `errors` payload into a readable sentence. The backend
+ * returns per-field messages, e.g. {operator_id: "Operator 'x' is already
+ * assigned to run y"} or {detail: "…"}. Returns undefined when nothing usable
+ * is present so the caller can fall back to a generic message.
+ */
+function extractApiErrorDetail(err: ApiError): string | undefined {
+  const { errors } = err;
+  if (typeof errors === 'string') return errors;
+  if (!errors || typeof errors !== 'object') return undefined;
+  const messages: string[] = [];
+  for (const value of Object.values(errors as Record<string, unknown>)) {
+    if (typeof value === 'string') messages.push(value);
+    else if (Array.isArray(value)) {
+      messages.push(...value.filter((v): v is string => typeof v === 'string'));
+    }
+  }
+  return messages.length ? messages.join(' ') : undefined;
 }
 </script>
 

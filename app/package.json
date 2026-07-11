@@ -21,6 +21,7 @@
     "@capacitor/status-bar": "8.0.2",
     "@ionic/vue": "^8.0.0",
     "@ionic/vue-router": "^8.0.0",
+    "capacitor-databus-telemetry": "file:plugins/capacitor-databus-telemetry",
     "ionicons": "^7.0.0",
     "mqtt": "^5.15.2",
     "pinia": "^3.0.4",

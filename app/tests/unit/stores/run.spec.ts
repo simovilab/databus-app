@@ -94,6 +94,25 @@ describe('useRunStore', () => {
     expect(fakeTelemetry.start).toHaveBeenCalledWith({ vehicleId: 'veh-1' });
   });
 
+  it('createRun() resolves even when telemetry.start rejects (broker unreachable)', async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({ status: 'success', run_id: 'run-1', run_lifecycle_state: 'Initialized' })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ status: 'success', run_lifecycle_state: 'Confirmed' })
+      );
+    // Telemetry fails to connect — the run is still created + confirmed, so
+    // createRun() must NOT reject (regression: modal froze on a hung/failed
+    // telemetry start).
+    fakeTelemetry.start.mockRejectedValueOnce(new Error('broker unreachable'));
+
+    const store = useRunStore();
+    await expect(store.createRun(input)).resolves.toBeUndefined();
+    expect(store.activeRun?.state).toBe('Confirmed');
+  });
+
   it('refreshState() GETs the run state and updates activeRun', async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
     fetchMock
@@ -122,7 +141,7 @@ describe('useRunStore', () => {
     await expect(store.refreshState()).rejects.toThrow('no active run');
   });
 
-  it('endRun() defaults to run_completed and stops telemetry', async () => {
+  it('endRun() cancels a not-yet-moving run (cancel_run + actor_role)', async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
     fetchMock
       .mockResolvedValueOnce(
@@ -132,20 +151,52 @@ describe('useRunStore', () => {
         jsonResponse({ status: 'success', run_lifecycle_state: 'Confirmed' })
       )
       .mockResolvedValueOnce(
-        jsonResponse({ status: 'success', run_lifecycle_state: 'Completed' })
+        jsonResponse({ status: 'success', run_lifecycle_state: 'Cancelled' })
+      );
+
+    const store = useRunStore();
+    await store.createRun(input); // leaves the run in Confirmed (not moving)
+    await store.endRun();
+
+    expect(store.activeRun?.state).toBe('Cancelled');
+    const [, endInit] = fetchMock.mock.calls[2];
+    expect(JSON.parse(endInit.body as string)).toEqual({
+      event: 'cancel_run',
+      details: { actor_role: 'operator' },
+    });
+    expect(fakeTelemetry.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('endRun() interrupts a run already under way (In Progress → run_interrupted)', async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({ status: 'success', run_id: 'run-1', run_lifecycle_state: 'Initialized' })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ status: 'success', run_lifecycle_state: 'Confirmed' })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ status: 'success', run_lifecycle_state: 'In Progress' })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ status: 'success', run_lifecycle_state: 'Interrupted' })
       );
 
     const store = useRunStore();
     await store.createRun(input);
+    await store.refreshState(); // advances local state to In Progress
     await store.endRun();
 
-    expect(store.activeRun?.state).toBe('Completed');
-    const [, endInit] = fetchMock.mock.calls[2];
-    expect(JSON.parse(endInit.body as string)).toEqual({ event: 'run_completed' });
-    expect(fakeTelemetry.stop).toHaveBeenCalledTimes(1);
+    expect(store.activeRun?.state).toBe('Interrupted');
+    const [, endInit] = fetchMock.mock.calls[3];
+    expect(JSON.parse(endInit.body as string)).toEqual({
+      event: 'run_interrupted',
+      details: { actor_role: 'operator' },
+    });
   });
 
-  it('endRun() accepts run_interrupted as a configurable event', async () => {
+  it('endRun() honors an explicit event override', async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
     fetchMock
       .mockResolvedValueOnce(
@@ -162,9 +213,11 @@ describe('useRunStore', () => {
     await store.createRun(input);
     await store.endRun('run_interrupted');
 
-    expect(store.activeRun?.state).toBe('Interrupted');
     const [, endInit] = fetchMock.mock.calls[2];
-    expect(JSON.parse(endInit.body as string)).toEqual({ event: 'run_interrupted' });
+    expect(JSON.parse(endInit.body as string)).toEqual({
+      event: 'run_interrupted',
+      details: { actor_role: 'operator' },
+    });
   });
 
   it('endRun() throws when there is no active run', async () => {

@@ -221,7 +221,9 @@ async function onEndRun(): Promise<void> {
   ending.value = true;
   endError.value = null;
   try {
-    // endRun posts {event:'run_completed'} → telemetry.stop() (master §6.6).
+    // endRun picks cancel_run / run_interrupted from the current state (an
+    // operator can't force run_completed — that's the system's terminal-stop
+    // event), then stops telemetry (master §6.6).
     await runStore.endRun();
     // One final refresh so the terminal state is reflected immediately.
     stopPolling();

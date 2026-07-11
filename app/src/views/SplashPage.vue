@@ -13,12 +13,11 @@
 </template>
 
 <script setup lang="ts">
-// Splash gate (master-plan §2.1 row 1). On mount we rehydrate the persisted
-// session via `useAuthStore().loadFromStorage()`, then route to Home if a
-// session was restored or to Login otherwise. No API call happens here — only
-// local storage read — so the splash is fast and never blocks on the network.
-// Every awaited promise is handled: a storage failure degrades to Login
-// rather than leaving an unhandled rejection on app boot.
+// Splash gate (master-plan §2.1 row 1). Store rehydration already happened in
+// main.ts bootstrap() (before the router guard), so the splash only routes:
+// to Home if a session was restored, otherwise to Login. This is the
+// cold-start landing at '/'; a hard refresh on a deep link is handled by the
+// same pre-mount rehydration plus the router's auth guard.
 import { IonContent, IonPage } from '@ionic/vue';
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -28,15 +27,7 @@ import { useAuthStore } from '@/stores/auth';
 const router = useRouter();
 const authStore = useAuthStore();
 
-onMounted(async () => {
-  try {
-    await authStore.loadFromStorage();
-  } catch {
-    // Corrupt/missing storage is treated as logged out by the store; a
-    // throw here would only come from the Preferences bridge itself, so we
-    // fall through to Login rather than stranding the user on the splash.
-  }
-
+onMounted(() => {
   const target = authStore.isAuthenticated
     ? { path: '/tabs/home' }
     : { name: 'login' };

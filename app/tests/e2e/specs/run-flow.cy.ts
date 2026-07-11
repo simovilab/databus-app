@@ -98,14 +98,16 @@ describe('Run flow — start, advance, end', () => {
       run_lifecycle_state: 'Initialized',
     }).as('createRun');
 
-    // /update/ responds by event: confirm → Confirmed, completed → Completed.
+    // /update/ responds by event: confirm → Confirmed, run_interrupted →
+    // Interrupted (the operator's manual end while the run is under way),
+    // cancel_run → Cancelled.
     cy.intercept('POST', `${API}/runs/run-1/update/`, (req) => {
       const event = req.body?.event;
       const state =
-        event === 'run_completed'
-          ? 'Completed'
-          : event === 'run_confirmed_by_operator'
-            ? 'Confirmed'
+        event === 'run_interrupted'
+          ? 'Interrupted'
+          : event === 'cancel_run'
+            ? 'Cancelled'
             : 'Confirmed';
       req.reply({ status: 'success', run_lifecycle_state: state });
     }).as('update');
@@ -160,12 +162,14 @@ describe('Run flow — start, advance, end', () => {
     cy.get('[data-testid="run-state-badge"]').should('contain', 'Tracking');
     cy.get('[data-testid="run-state-badge"]').should('contain', 'In Progress');
 
-    // --- End run → terminal state (R4) ---
+    // --- End run: the run is In Progress, so the operator's manual end is
+    //     run_interrupted (with actor_role) → terminal Interrupted state ---
     cy.get('[data-testid="end-run-button"]').click();
     cy.wait('@update').its('request.body').should('deep.equal', {
-      event: 'run_completed',
+      event: 'run_interrupted',
+      details: { actor_role: 'operator' },
     });
-    cy.get('[data-testid="run-state-badge"]').should('contain', 'Completed');
+    cy.get('[data-testid="run-state-badge"]').should('contain', 'Interrupted');
     cy.get('[data-testid="run-terminal-note"]').should('be.visible');
   });
 });

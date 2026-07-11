@@ -2,6 +2,9 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router';
+import { useAuthStore } from '@/stores/auth';
+import { useRunHistoryStore } from '@/stores/runHistory';
+import { useSettingsStore } from '@/stores/settings';
 
 import { IonicVue } from '@ionic/vue';
 
@@ -35,11 +38,44 @@ import '@ionic/vue/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
-const app = createApp(App)
-  .use(IonicVue)
-  .use(createPinia())
-  .use(router);
+const pinia = createPinia();
+const app = createApp(App).use(IonicVue).use(pinia);
 
-router.isReady().then(() => {
-  app.mount('#app');
-});
+/**
+ * Rehydrate persisted stores from @capacitor/preferences, then install the
+ * router and mount.
+ *
+ * Order matters: installing the router (`app.use(router)`) immediately kicks
+ * off the initial navigation and its `beforeEach` auth guard. If that runs
+ * before the session is loaded, the guard sees `isAuthenticated === false` and
+ * redirects to /login — which is exactly the "refresh bounces me to login"
+ * bug. So we `await` the Preferences reads FIRST, then install the router.
+ *
+ * On native there is no page refresh, but the same path runs on every cold
+ * start (app killed → relaunched), where Preferences is real OS-backed storage
+ * (Android SharedPreferences / iOS UserDefaults) — so a returning operator
+ * lands straight in the app without re-logging in.
+ *
+ * Each read is independent and non-fatal: the stores already treat a
+ * corrupt/failed value as "logged out" / defaults, so a bad read must not
+ * block boot.
+ */
+async function bootstrap(): Promise<void> {
+  const auth = useAuthStore(pinia);
+  const runHistory = useRunHistoryStore(pinia);
+  const settings = useSettingsStore(pinia);
+  await Promise.all([
+    auth.loadFromStorage().catch(() => undefined),
+    runHistory.loadFromStorage().catch(() => undefined),
+    settings.loadFromStorage().catch(() => undefined),
+  ]);
+}
+
+bootstrap()
+  .catch(() => undefined)
+  .finally(() => {
+    app.use(router);
+    router.isReady().then(() => {
+      app.mount('#app');
+    });
+  });

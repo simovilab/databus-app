@@ -61,39 +61,11 @@
         </ion-list>
       </section>
 
-      <!-- Step: shape / direction -->
-      <section v-else-if="step === 'shape'">
-        <h2 class="step-title">Select direction</h2>
-        <p v-if="shapes.length === 0" class="step-empty">No shapes for this route.</p>
-        <ion-list v-else>
-          <ion-radio-group
-            v-model="selectedShapeId"
-            allow-empty-selection
-          >
-            <ion-item
-              v-for="shape in shapes"
-              :key="shape.shape_id"
-              data-testid="shape-option"
-            >
-              <ion-radio
-                :value="shape.shape_id"
-                label-placement="end"
-                justify="start"
-              >
-                <ion-label>
-                  <h2>{{ shape.shape_from }} → {{ shape.shape_to }}</h2>
-                  <p>{{ shape.shape_name }}</p>
-                </ion-label>
-              </ion-radio>
-            </ion-item>
-          </ion-radio-group>
-        </ion-list>
-      </section>
-
-      <!-- Step: trip -->
+      <!-- Step: trip (a GTFS trip carries its own direction + shape, so there
+           is no separate direction step — see services/schedule.ts). -->
       <section v-else-if="step === 'trip'">
         <h2 class="step-title">Select a trip</h2>
-        <p v-if="trips.length === 0" class="step-empty">No trips scheduled for this route/shape today.</p>
+        <p v-if="trips.length === 0" class="step-empty">No trips scheduled for this route today.</p>
         <ion-list v-else>
           <ion-radio-group
             v-model="selectedTripId"
@@ -110,7 +82,7 @@
                 justify="start"
               >
                 <ion-label>
-                  <h2>{{ trip.trip_time }}</h2>
+                  <h2>{{ tripLabel(trip) }}</h2>
                   <p>{{ trip.trip_headsign }}</p>
                 </ion-label>
               </ion-radio>
@@ -198,10 +170,12 @@
 
 <script setup lang="ts">
 // Trip setup wizard: drives the schedule lookups (services/schedule.ts) in
-// the order route → service-today → which-shapes → find-trips → vehicle,
-// then creates + confirms the run via useRunStore.createRun (master §4.2,
-// §6.2). The store owns telemetry start/stop; this modal only creates the
-// run. All schedule failures surface as ApiError and render via <AppError>.
+// the order route → trip → vehicle, then creates + confirms the run via
+// useRunStore.createRun (master §4.2, §6.2). A GTFS trip already carries its
+// direction_id and shape_id, so picking a trip determines both — there is no
+// separate direction step (this matches how the simulator schedules runs).
+// The store owns telemetry start/stop; this modal only creates the run.
+// All schedule failures surface as ApiError and render via <AppError>.
 import {
   IonButton,
   IonButtons,
@@ -224,23 +198,11 @@ import AppError from '@/components/ui/AppError.vue';
 import AppLoading from '@/components/ui/AppLoading.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRunStore } from '@/stores/run';
-import {
-  findTrips,
-  getRoutes,
-  getServiceToday,
-  getVehicles,
-  getWhichShapes,
-} from '@/services/schedule';
+import { getRoutes, getTrips, getVehicles } from '@/services/schedule';
 import { ApiError } from '@/services/apiClient';
-import type {
-  CreateRunInput,
-  Route,
-  ShapeChoice,
-  TripChoice,
-  Vehicle,
-} from '@/types/api';
+import type { CreateRunInput, Route, Trip, Vehicle } from '@/types/api';
 
-type Step = 'route' | 'shape' | 'trip' | 'vehicle';
+type Step = 'route' | 'trip' | 'vehicle';
 
 const props = defineProps<{ isOpen: boolean }>();
 const emit = defineEmits<{
@@ -257,14 +219,10 @@ const error = ref<unknown>(null);
 const busy = ref(false);
 
 const routes = ref<Route[]>([]);
-const shapes = ref<ShapeChoice[]>([]);
-const trips = ref<TripChoice[]>([]);
+const trips = ref<Trip[]>([]);
 const vehicles = ref<Vehicle[]>([]);
 
-const serviceId = ref<string>('');
-
 const selectedRouteId = ref<string | null>(null);
-const selectedShapeId = ref<string | null>(null);
 const selectedTripId = ref<string | null>(null);
 const selectedVehicleId = ref<string | null>(null);
 
@@ -274,12 +232,19 @@ const manualVehicleId = ref('');
 const selectedRoute = computed(
   () => routes.value.find((r) => r.route_id === selectedRouteId.value) ?? null,
 );
-const selectedShape = computed(
-  () => shapes.value.find((s) => s.shape_id === selectedShapeId.value) ?? null,
-);
 const selectedTrip = computed(
   () => trips.value.find((t) => t.trip_id === selectedTripId.value) ?? null,
 );
+
+/**
+ * A GTFS trip_id in this feed embeds the departure time as its suffix
+ * (e.g. "desde_artes_sin_milla_entresemana_08:35"). Prefer that HH:MM tail as
+ * the readable label; fall back to the raw trip_id when it doesn't match.
+ */
+function tripLabel(trip: Trip): string {
+  const match = trip.trip_id.match(/(\d{1,2}:\d{2})(?::\d{2})?$/);
+  return match ? match[1] : trip.trip_id;
+}
 
 const vehicleId = computed(() =>
   manualVehicle.value
@@ -291,8 +256,6 @@ const canAdvance = computed(() => {
   switch (step.value) {
     case 'route':
       return !!selectedRouteId.value;
-    case 'shape':
-      return !!selectedShapeId.value;
     case 'trip':
       return !!selectedTripId.value;
     default:
@@ -309,12 +272,9 @@ function resetState(): void {
   error.value = null;
   busy.value = false;
   routes.value = [];
-  shapes.value = [];
   trips.value = [];
   vehicles.value = [];
-  serviceId.value = '';
   selectedRouteId.value = null;
-  selectedShapeId.value = null;
   selectedTripId.value = null;
   selectedVehicleId.value = null;
   manualVehicle.value = false;
@@ -345,34 +305,20 @@ async function loadStep(target: Step): Promise<void> {
       loadingMessage.value = 'Loading routes…';
       loading.value = true;
       routes.value = await getRoutes();
-    } else if (target === 'shape') {
-      if (!selectedRouteId.value) return;
-      loadingMessage.value = 'Loading directions…';
-      loading.value = true;
-      // Resolve service_id for today + shapes for the selected route in
-      // parallel (master §2.1 steps 5–6).
-      const [services, routeShapes] = await Promise.all([
-        getServiceToday(),
-        getWhichShapes(selectedRouteId.value),
-      ]);
-      serviceId.value = services[0] ?? '';
-      shapes.value = routeShapes;
     } else if (target === 'trip') {
-      if (!selectedShapeId.value) return;
+      if (!selectedRouteId.value) return;
       loadingMessage.value = 'Loading trips…';
       loading.value = true;
+      // A trip already carries its direction + shape, so route → trip is the
+      // whole selection. Load vehicles alongside so the next step is instant.
       const [routeTrips, routeVehicles] = await Promise.all([
-        findTrips({
-          routeId: selectedRouteId.value!,
-          serviceId: serviceId.value,
-          shapeId: selectedShapeId.value,
-        }),
+        getTrips(selectedRouteId.value),
         getVehicles().catch(() => [] as Vehicle[]),
       ]);
-      // Sort by scheduled departure time for a readable list.
+      // Sort by the departure time embedded in the trip label for readability.
       trips.value = routeTrips
         .slice()
-        .sort((a, b) => a.trip_time.localeCompare(b.trip_time));
+        .sort((a, b) => tripLabel(a).localeCompare(tripLabel(b)));
       vehicles.value = routeVehicles;
     }
     step.value = target;
@@ -385,14 +331,14 @@ async function loadStep(target: Step): Promise<void> {
 }
 
 function goNext(): void {
-  const order: Step[] = ['route', 'shape', 'trip', 'vehicle'];
+  const order: Step[] = ['route', 'trip', 'vehicle'];
   const idx = order.indexOf(step.value);
   const next = order[idx + 1];
   if (next) void loadStep(next);
 }
 
 function goBack(): void {
-  const order: Step[] = ['route', 'shape', 'trip', 'vehicle'];
+  const order: Step[] = ['route', 'trip', 'vehicle'];
   const idx = order.indexOf(step.value);
   clearTransient();
   if (idx > 0) step.value = order[idx - 1];
@@ -421,7 +367,7 @@ async function onConfirm(): Promise<void> {
     error.value = new Error('No operator session. Please log in again.');
     return;
   }
-  if (!selectedRoute.value || !selectedShape.value || !selectedTrip.value) {
+  if (!selectedRoute.value || !selectedTrip.value) {
     error.value = new Error('Missing run details. Please restart selection.');
     return;
   }
@@ -433,13 +379,15 @@ async function onConfirm(): Promise<void> {
   clearTransient();
   busy.value = true;
   try {
+    // direction_id and shape_id come from the selected trip — the trip is the
+    // authoritative route+direction+shape bundle (see services/schedule.ts).
     const input: CreateRunInput = {
       vehicle_id: vehicleId.value,
       operator_id: operatorId,
       route_id: selectedRoute.value.route_id,
       trip_id: selectedTrip.value.trip_id,
-      direction_id: selectedShape.value.direction_id,
-      shape_id: selectedShape.value.shape_id,
+      direction_id: selectedTrip.value.direction_id,
+      shape_id: selectedTrip.value.shape_id,
       schedule_relationship: 'SCHEDULED',
     };
     // createRun posts create-run → confirm → telemetry.start (master §6.6).

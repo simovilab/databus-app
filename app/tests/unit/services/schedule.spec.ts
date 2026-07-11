@@ -1,12 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import {
-  findTrips,
-  getRoutes,
-  getServiceToday,
-  getVehicles,
-  getWhichShapes,
-} from '@/services/schedule';
+import { getRoutes, getTrips, getVehicles } from '@/services/schedule';
 
 function jsonResponse(body: unknown) {
   return {
@@ -41,63 +35,28 @@ describe('schedule service', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:8000/api/routes/');
   });
 
-  it('getServiceToday() maps the response to a list of service_ids', async () => {
-    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValueOnce(
-      jsonResponse([{ service_id: 'WEEKDAY' }, { service_id: 'SATURDAY' }])
-    );
-
-    const services = await getServiceToday('2026-07-10');
-
-    expect(services).toEqual(['WEEKDAY', 'SATURDAY']);
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      'http://localhost:8000/api/service-today/?date=2026-07-10'
-    );
-  });
-
-  it('getServiceToday() omits the date param when not provided', async () => {
-    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValueOnce(jsonResponse([]));
-
-    await getServiceToday();
-
-    expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:8000/api/service-today/');
-  });
-
-  it('getWhichShapes() GETs /which-shapes/?route_id=', async () => {
+  it('getTrips() GETs /trips/?route_id= and returns trips carrying direction+shape', async () => {
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
     fetchMock.mockResolvedValueOnce(
       jsonResponse([
         {
-          shape_id: 's1',
+          trip_id: 'hacia_artes_entresemana_08:35',
+          route_id: 'R1',
+          service_id: 'entresemana',
+          trip_headsign: 'Artes',
           direction_id: 0,
-          shape_name: 'Norte',
-          shape_desc: '',
-          shape_from: 'A',
-          shape_to: 'B',
+          shape_id: 'hacia_artes',
         },
       ])
     );
 
-    const shapes = await getWhichShapes('R1');
+    const trips = await getTrips('R1');
 
-    expect(shapes[0].shape_id).toBe('s1');
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      'http://localhost:8000/api/which-shapes/?route_id=R1'
-    );
-  });
-
-  it('findTrips() GETs /find-trips/ with all three required params', async () => {
-    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
-    fetchMock.mockResolvedValueOnce(jsonResponse([]));
-
-    await findTrips({ routeId: 'R1', serviceId: 'WEEKDAY', shapeId: 'S1' });
-
+    expect(trips[0].direction_id).toBe(0);
+    expect(trips[0].shape_id).toBe('hacia_artes');
     const url = new URL(fetchMock.mock.calls[0][0] as string);
-    expect(url.pathname).toBe('/api/find-trips/');
+    expect(url.pathname).toBe('/api/trips/');
     expect(url.searchParams.get('route_id')).toBe('R1');
-    expect(url.searchParams.get('service_id')).toBe('WEEKDAY');
-    expect(url.searchParams.get('shape_id')).toBe('S1');
   });
 
   it('getVehicles() GETs /vehicle/ with an optional company filter', async () => {

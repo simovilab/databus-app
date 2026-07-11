@@ -75,28 +75,16 @@ describe('Run flow — start, advance, end', () => {
       },
     ]).as('routes');
 
-    cy.intercept('GET', `${API}/service-today/`, [{ service_id: 'SVC1' }]).as(
-      'service',
-    );
-
-    cy.intercept('GET', `${API}/which-shapes/*`, [
+    // A trip carries its own direction_id + shape_id, so the modal lists trips
+    // straight from /trips/?route_id= — no separate shape/direction step.
+    cy.intercept('GET', `${API}/trips/*`, [
       {
-        shape_id: 'SH1',
-        direction_id: 0,
-        shape_name: 'Outbound',
-        shape_desc: '',
-        shape_from: 'San José',
-        shape_to: 'Cartago',
-      },
-    ]).as('shapes');
-
-    cy.intercept('GET', `${API}/find-trips/*`, [
-      {
-        trip_id: 'T1',
-        trip_time: '08:00:00',
-        run_lifecycle_state: 'UNKNOWN',
-        direction_id: 0,
+        trip_id: 'hacia_cartago_SVC1_08:00',
+        route_id: 'R1',
+        service_id: 'SVC1',
         trip_headsign: 'Cartago',
+        direction_id: 0,
+        shape_id: 'SH1',
       },
     ]).as('trips');
 
@@ -145,11 +133,6 @@ describe('Run flow — start, advance, end', () => {
     cy.get('[data-testid="route-option"]').first().click();
     cy.get('[data-testid="next-button"]').click();
 
-    // --- Step: shape (service + shapes loaded in parallel) ---
-    cy.wait(['@service', '@shapes']);
-    cy.get('[data-testid="shape-option"]').first().click();
-    cy.get('[data-testid="next-button"]').click();
-
     // --- Step: trip (trips + vehicles loaded in parallel) ---
     cy.wait(['@trips', '@vehicles']);
     cy.get('[data-testid="trip-option"]').first().click();
@@ -164,7 +147,7 @@ describe('Run flow — start, advance, end', () => {
       vehicle_id: 'BUS-001',
       operator_id: 'op-e2e',
       route_id: 'R1',
-      trip_id: 'T1',
+      trip_id: 'hacia_cartago_SVC1_08:00',
       direction_id: 0,
       shape_id: 'SH1',
       schedule_relationship: 'SCHEDULED',

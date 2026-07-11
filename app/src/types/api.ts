@@ -47,30 +47,28 @@ export interface Route {
   [key: string]: unknown;
 }
 
-/** GET /which-shapes/?route_id= item (WhichShapesSerializer). */
-export interface ShapeChoice {
-  shape_id: string;
-  direction_id: number;
-  shape_name: string;
-  shape_desc: string;
-  shape_from: string;
-  shape_to: string;
-}
-
-/** GET /find-trips/?route_id=&service_id=&shape_id= item (FindTripsSerializer). */
-export interface TripChoice {
+/**
+ * GET /trips/?route_id= item (TripViewSet, TripSerializer fields="__all__").
+ *
+ * A GTFS trip intrinsically carries route_id, direction_id AND shape_id — the
+ * same bundle the simulator schedules per run (databus-sim
+ * scheduler.py `CreateRunRequest`). The operator picks ONE trip and the run's
+ * direction + shape come along with it; there is no separate "direction" step.
+ * This also avoids the which-shapes/service-today/find-trips discovery
+ * endpoints, which depend on backend tables that the GTFS loader leaves empty.
+ */
+export interface Trip {
+  url?: string;
+  feed?: string;
+  route_id: string;
+  service_id: string;
   trip_id: string;
-  trip_time: string; // "HH:MM:SS"
-  run_lifecycle_state: string; // may be "UNKNOWN" if no Run exists yet today
-  direction_id: number;
   trip_headsign: string;
-}
-
-/** Query params for GET /find-trips/ — all required per FindTripsView. */
-export interface FindTripsQuery {
-  routeId: string;
-  serviceId: string;
-  shapeId: string;
+  trip_short_name?: string;
+  direction_id: number;
+  block_id?: string;
+  shape_id: string;
+  [key: string]: unknown;
 }
 
 /**

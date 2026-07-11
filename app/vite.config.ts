@@ -22,6 +22,18 @@ export default defineConfig({
       ),
     },
   },
+  // Dev-only proxy: the browser calls same-origin /api/... and Vite forwards
+  // to the Databús orchestrator. This sidesteps CORS (the backend has no
+  // django-cors-headers configured for the dev origin). Prod uses an absolute
+  // https API URL (native apps have no CORS; prod web is same-origin or CORS'd).
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom'

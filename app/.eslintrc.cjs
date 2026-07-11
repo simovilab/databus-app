@@ -16,5 +16,12 @@ module.exports = {
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'vue/no-deprecated-slot-attribute': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
+    // Allow a leading underscore to mark intentionally-unused args/vars
+    // (Capacitor plugin interface stubs implement required signatures they
+    // don't use).
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+    ],
   }
 }

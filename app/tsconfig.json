@@ -13,7 +13,8 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "capacitor-databus-telemetry": ["./plugins/capacitor-databus-telemetry/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],

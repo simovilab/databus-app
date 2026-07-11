@@ -5,7 +5,7 @@ import { createPinia, setActivePinia } from 'pinia';
 // import (including 'vue') is evaluated, and markRaw() in the store means
 // these objects reach the store by identity, so genuine reactivity isn't
 // needed for these assertions.
-const { fakeTelemetry } = vi.hoisted(() => {
+const { fakeTelemetry, recordSpy } = vi.hoisted(() => {
   const fakeTelemetry = {
     start: vi.fn(async () => {}),
     stop: vi.fn(async () => {}),
@@ -13,11 +13,15 @@ const { fakeTelemetry } = vi.hoisted(() => {
     lastFix: { value: null as unknown },
     queuedCount: { value: 0 },
   };
-  return { fakeTelemetry };
+  return { fakeTelemetry, recordSpy: vi.fn(async () => {}) };
 });
 
 vi.mock('@/services/telemetry/runtime', () => ({
   createTelemetryRuntime: () => fakeTelemetry,
+}));
+
+vi.mock('@/stores/runHistory', () => ({
+  useRunHistoryStore: () => ({ record: recordSpy }),
 }));
 
 import { useRunStore } from '@/stores/run';
@@ -50,6 +54,7 @@ describe('useRunStore', () => {
     vi.stubGlobal('fetch', vi.fn());
     fakeTelemetry.start.mockClear();
     fakeTelemetry.stop.mockClear();
+    recordSpy.mockClear();
   });
 
   afterEach(() => {
@@ -134,6 +139,37 @@ describe('useRunStore', () => {
     expect(store.activeRun?.state).toBe('Tracking');
     const [stateUrl] = fetchMock.mock.calls[2];
     expect(stateUrl).toBe('http://localhost:8000/api/runs/run-1/state/');
+    // A non-terminal poll does not record history.
+    expect(recordSpy).not.toHaveBeenCalled();
+  });
+
+  it('refreshState() records history + stops telemetry when the system completes a run', async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({ status: 'success', run_id: 'run-1', run_lifecycle_state: 'Initialized' })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ status: 'success', run_lifecycle_state: 'Confirmed' })
+      )
+      // The realtime engine completed the run at the terminal stop — the app
+      // observes it via polling, with no operator action.
+      .mockResolvedValueOnce(
+        jsonResponse({ status: 'success', run_lifecycle_state: 'Completed' })
+      );
+
+    const store = useRunStore();
+    await store.createRun(input);
+    fakeTelemetry.stop.mockClear();
+    const state = await store.refreshState();
+
+    expect(state).toBe('Completed');
+    expect(fakeTelemetry.stop).toHaveBeenCalledTimes(1);
+    expect(recordSpy).toHaveBeenCalledTimes(1);
+    expect(recordSpy.mock.calls[0][0]).toMatchObject({
+      runId: 'run-1',
+      finalState: 'Completed',
+    });
   });
 
   it('refreshState() throws when there is no active run', async () => {

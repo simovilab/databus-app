@@ -38,6 +38,19 @@ const IN_MOTION_STATES: ReadonlySet<RunState> = new Set<RunState>([
   'No Signal',
 ]);
 
+/**
+ * Terminal states — the run is over and belongs in history. Includes states the
+ * *system* reaches without an operator action: `Completed` (realtime engine at
+ * the terminal stop) and `Cancelled` (e.g. RUN_TRACKING_EXPIRED from No Signal),
+ * as well as the operator-driven `Interrupted` / `Short Turned`.
+ */
+const TERMINAL_STATES: ReadonlySet<RunState> = new Set<RunState>([
+  'Completed',
+  'Cancelled',
+  'Interrupted',
+  'Short Turned',
+]);
+
 export const useRunStore = defineStore('run', () => {
   const activeRun = ref<ActiveRun | null>(null);
   // When the current run was created on this device (ISO 8601). Used to stamp
@@ -93,7 +106,43 @@ export const useRunStore = defineStore('run', () => {
     );
     const state = response.run_lifecycle_state as RunState;
     activeRun.value = { ...activeRun.value, state };
+    // A run can reach a terminal state without any operator action — the
+    // realtime engine completes it at the terminal stop (Completed), or expires
+    // it from No Signal (Cancelled). Polling is where the app observes that, so
+    // stop telemetry and record history here too. Both are idempotent
+    // (record() de-dupes by runId; telemetry.stop() is safe to re-call), so
+    // this coexists with endRun() for the operator-driven paths.
+    if (TERMINAL_STATES.has(state)) {
+      await telemetry.stop().catch(() => undefined);
+      await recordToHistory(state);
+    }
     return state;
+  }
+
+  /**
+   * Append the active run to the local history log (backend has no run-list
+   * endpoint). Best-effort and idempotent: record() de-dupes by runId, so
+   * calling it from both endRun() and refreshState() records a run exactly
+   * once. A persistence failure must never break the run flow.
+   */
+  async function recordToHistory(finalState: RunState): Promise<void> {
+    const run = activeRun.value;
+    if (!run) return;
+    try {
+      await useRunHistoryStore().record({
+        runId: run.runId,
+        vehicleId: run.vehicleId,
+        routeId: run.routeId,
+        tripId: run.tripId,
+        directionId: run.directionId,
+        shapeId: run.shapeId,
+        finalState,
+        startedAt: startedAt.value ?? new Date().toISOString(),
+        endedAt: new Date().toISOString(),
+      });
+    } catch {
+      // swallow — history is a convenience, not part of the run contract
+    }
   }
 
   /**
@@ -120,25 +169,7 @@ export const useRunStore = defineStore('run', () => {
       state: finalState,
     };
     await telemetry.stop();
-
-    // Append to the local run-history log (backend has no run-list endpoint).
-    // Best-effort: a persistence failure must not break ending the run.
-    try {
-      const run = activeRun.value;
-      await useRunHistoryStore().record({
-        runId: run.runId,
-        vehicleId: run.vehicleId,
-        routeId: run.routeId,
-        tripId: run.tripId,
-        directionId: run.directionId,
-        shapeId: run.shapeId,
-        finalState,
-        startedAt: startedAt.value ?? new Date().toISOString(),
-        endedAt: new Date().toISOString(),
-      });
-    } catch {
-      // swallow — history is a convenience, not part of the run contract
-    }
+    await recordToHistory(finalState);
   }
 
   return { activeRun, startedAt, createRun, refreshState, endRun, telemetry };

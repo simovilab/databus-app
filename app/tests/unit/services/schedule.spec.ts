@@ -76,4 +76,36 @@ describe('schedule service', () => {
 
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:8000/api/vehicle/');
   });
+
+  it('getVehicles() backfills id from the hyperlinked url when the server omits it', async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    // HyperlinkedModelSerializer payload: url present, no id field.
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse([
+        {
+          url: 'http://localhost:8000/api/vehicle/unit-01/?format=json',
+          license_plate: '01',
+        },
+        {
+          url: 'http://localhost:8000/api/vehicle/veh-001/',
+          license_plate: 'DEMO-001',
+        },
+      ])
+    );
+
+    const vehicles = await getVehicles();
+
+    expect(vehicles.map((v) => v.id)).toEqual(['unit-01', 'veh-001']);
+  });
+
+  it('getVehicles() keeps an explicit id when the server provides one', async () => {
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse([{ id: 'veh-1', license_plate: 'ABC123' }])
+    );
+
+    const vehicles = await getVehicles();
+
+    expect(vehicles[0].id).toBe('veh-1');
+  });
 });

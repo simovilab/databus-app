@@ -72,9 +72,11 @@ export interface Trip {
 }
 
 /**
- * GET /vehicle/ list item. VehicleSerializer is fields="__all__" on the
- * Vehicle model (operations/models.py) — id is the vehicle_id string PK
- * used both in create-run and the MQTT topic.
+ * GET /vehicle/ list item. VehicleSerializer is a HyperlinkedModelSerializer,
+ * so the wire payload carries `url` (…/vehicle/<id>/) but NOT an `id` field.
+ * `id` is the vehicle's string PK — the vehicle_id used in create-run and the
+ * MQTT topic — which getVehicles() backfills from the url tail (see
+ * services/schedule.ts).
  */
 export interface Vehicle {
   url?: string;

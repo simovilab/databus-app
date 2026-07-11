@@ -23,8 +23,26 @@ export function getTrips(routeId: string): Promise<Trip[]> {
   return apiGet<Trip[]>('/trips/', { route_id: routeId });
 }
 
-/** GET /vehicle/?company= — vehicles available for run creation (R3). */
-export function getVehicles(company?: string): Promise<Vehicle[]> {
+/**
+ * GET /vehicle/?company= — vehicles available for run creation (R3).
+ *
+ * The backend VehicleSerializer is a HyperlinkedModelSerializer: it emits
+ * `url` (…/vehicle/<id>/) but no `id` field, even though `id` IS the vehicle's
+ * PK (the vehicle_id create-run needs). Backfill `id` from the url tail when
+ * the server omits it, so callers always get a usable vehicle_id.
+ */
+export async function getVehicles(company?: string): Promise<Vehicle[]> {
   const params = company ? { company } : undefined;
-  return apiGet<Vehicle[]>('/vehicle/', params);
+  const vehicles = await apiGet<Vehicle[]>('/vehicle/', params);
+  return vehicles.map((v) =>
+    v.id ? v : { ...v, id: vehicleIdFromUrl(v.url) },
+  );
+}
+
+/** Extract the trailing PK segment from a hyperlinked vehicle URL. */
+function vehicleIdFromUrl(url: string | undefined): string {
+  if (!url) return '';
+  // ".../api/vehicle/unit-01/?format=json" or ".../api/vehicle/unit-01/"
+  const path = url.split('?')[0].replace(/\/+$/, '');
+  return path.substring(path.lastIndexOf('/') + 1);
 }

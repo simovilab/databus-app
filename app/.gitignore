@@ -28,7 +28,7 @@ npm-debug.log*
 /dist
 /node_modules
 /platforms
-/plugins
+/plugins/*
 # ...but keep our own custom Capacitor plugin source tracked (A5 telemetry plugin).
 !/plugins/capacitor-databus-telemetry
 /www

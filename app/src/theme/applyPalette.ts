@@ -76,12 +76,50 @@ function steppedColorVars(name: string, hex: string): Record<string, string> {
   };
 }
 
+/** Mix `rgb` toward `target` by `amount` (0..1). */
+function mix(rgb: Rgb, target: Rgb, amount: number): Rgb {
+  return {
+    r: rgb.r + (target.r - rgb.r) * amount,
+    g: rgb.g + (target.g - rgb.g) * amount,
+    b: rgb.b + (target.b - rgb.b) * amount,
+  };
+}
+
+const WHITE: Rgb = { r: 255, g: 255, b: 255 };
+const BLACK: Rgb = { r: 0, g: 0, b: 0 };
+
 /**
- * Compute every CSS variable a palette overrides. Exported (not just applied)
- * so it can be unit-tested without a DOM.
+ * Given a page background, derive the full set of surface/text tokens Ionic
+ * needs so the *whole* app (cards, toolbars, tab bar, items, text) recolors
+ * coherently — not just the page canvas. A light background nudges surfaces
+ * toward white and text toward black; a dark one does the reverse.
+ */
+function backgroundVars(bgHex: string): Record<string, string> {
+  const bg = parseHex(bgHex);
+  const dark = contrast(bg).hex === '#ffffff'; // white text ⇒ dark background
+  const towardFg = dark ? WHITE : BLACK; // surfaces lift away from the bg
+  const surface = toHex(mix(bg, towardFg, dark ? 0.06 : 0.04));
+  const text = dark ? '#f4f6f5' : '#1f2421';
+  return {
+    '--ion-background-color': toHex(bg),
+    '--ion-background-color-rgb': rgbStr(bg),
+    '--ion-text-color': text,
+    '--ion-text-color-rgb': rgbStr(parseHex(text)),
+    '--ion-item-background': surface,
+    '--ion-card-background': surface,
+    '--ion-toolbar-background': surface,
+    '--ion-tab-bar-background': surface,
+  };
+}
+
+/**
+ * Compute the palette's brand-color CSS variables (rgb / contrast / shade /
+ * tint for each stepped color). Background/surface tokens are handled
+ * separately (see backgroundVars) because they are mode-dependent. Exported so
+ * it can be unit-tested without a DOM.
  */
 export function paletteToCssVars(palette: Palette): Record<string, string> {
-  const vars: Record<string, string> = {
+  return {
     ...steppedColorVars('primary', palette.primary),
     ...steppedColorVars('secondary', palette.secondary),
     ...steppedColorVars('tertiary', palette.tertiary),
@@ -89,22 +127,64 @@ export function paletteToCssVars(palette: Palette): Record<string, string> {
     // brand (matches how theme/variables.css maps dark to the wordmark black).
     ...steppedColorVars('dark', palette.secondary),
   };
-  if (palette.background) {
-    vars['--ion-background-color'] = palette.background;
-    vars['--ion-background-color-rgb'] = rgbStr(parseHex(palette.background));
-  }
-  return vars;
+}
+
+/**
+ * Compute the mode-appropriate background/surface variables for a palette.
+ * `dark` selects backgroundDark (falling back to background). Returns {} when
+ * the palette defines no background for the requested mode. Exported for tests.
+ */
+export function paletteBackgroundVars(
+  palette: Palette,
+  dark: boolean,
+): Record<string, string> {
+  const hex = dark ? palette.backgroundDark ?? palette.background : palette.background;
+  return hex ? backgroundVars(hex) : {};
+}
+
+function prefersDark(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
 }
 
 /**
  * Apply a palette to the live document by writing the derived variables onto
- * :root. No-op outside a browser (SSR/unit tests without a DOM).
+ * :root. Brand colors are mode-independent; the background/surface tokens track
+ * the OS light/dark preference. No-op outside a browser (unit tests w/o a DOM).
  */
 export function applyPalette(palette: Palette): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  const vars = paletteToCssVars(palette);
+  const vars = {
+    ...paletteToCssVars(palette),
+    ...paletteBackgroundVars(palette, prefersDark()),
+  };
   for (const [key, value] of Object.entries(vars)) {
     root.style.setProperty(key, value);
   }
+}
+
+let schemeListenerBound = false;
+
+/**
+ * Re-apply the active palette whenever the OS light/dark preference changes, so
+ * the background/surface tokens switch modes live. `getActive` returns the
+ * currently-selected palette at fire time. Idempotent — safe to call once at
+ * boot; a no-op without matchMedia (unit tests).
+ */
+export function watchColorScheme(getActive: () => Palette): void {
+  if (
+    schemeListenerBound ||
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+  ) {
+    return;
+  }
+  schemeListenerBound = true;
+  window
+    .matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => applyPalette(getActive()));
 }

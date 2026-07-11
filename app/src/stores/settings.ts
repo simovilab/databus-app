@@ -6,7 +6,7 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import { Preferences } from '@capacitor/preferences';
-import { applyPalette } from '@/theme/applyPalette';
+import { applyPalette, watchColorScheme } from '@/theme/applyPalette';
 import { DEFAULT_PALETTE_ID, getPalette } from '@/theme/palettes';
 
 const STORAGE_KEY = 'databus.settings';
@@ -49,8 +49,10 @@ export const useSettingsStore = defineStore('settings', () => {
         settings.value = { ...DEFAULTS };
       }
     }
-    // Apply the (possibly stored) palette so the app boots in the chosen theme.
+    // Apply the (possibly stored) palette so the app boots in the chosen theme,
+    // and keep the background/surface tokens in sync with OS light/dark changes.
     applyPalette(getPalette(settings.value.paletteId));
+    watchColorScheme(() => getPalette(settings.value.paletteId));
   }
 
   async function update(patch: Partial<AppSettings>): Promise<void> {

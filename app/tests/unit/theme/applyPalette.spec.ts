@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { paletteToCssVars } from '@/theme/applyPalette';
+import { paletteBackgroundVars, paletteToCssVars } from '@/theme/applyPalette';
 import { getPalette } from '@/theme/palettes';
 import type { Palette } from '@/theme/palettes';
 
@@ -58,18 +58,56 @@ describe('paletteToCssVars', () => {
     expect(vars['--ion-color-primary']).toBe('#00aaff');
   });
 
-  it('sets background vars only when a background is provided', () => {
-    const withBg: Palette = {
-      id: 't',
-      name: 'T',
+  it('does not put background tokens in the brand-color vars', () => {
+    // Backgrounds are mode-dependent and handled by paletteBackgroundVars.
+    const vars = paletteToCssVars(getPalette('databus'));
+    expect(vars['--ion-background-color']).toBeUndefined();
+  });
+});
+
+describe('paletteBackgroundVars', () => {
+  const palette: Palette = {
+    id: 't',
+    name: 'T',
+    primary: '#0a84ff',
+    secondary: '#0b1f33',
+    tertiary: '#30c8c9',
+    background: '#eef4fb',
+    backgroundDark: '#0a1420',
+  };
+
+  it('uses the light background and dark text in light mode', () => {
+    const vars = paletteBackgroundVars(palette, false);
+    expect(vars['--ion-background-color']).toBe('#eef4fb');
+    expect(vars['--ion-text-color']).toBe('#1f2421');
+    // Surfaces + toolbar/tab-bar/card/item all get set so the app recolors.
+    expect(vars['--ion-item-background']).toBeDefined();
+    expect(vars['--ion-toolbar-background']).toBeDefined();
+    expect(vars['--ion-tab-bar-background']).toBeDefined();
+    expect(vars['--ion-card-background']).toBeDefined();
+  });
+
+  it('uses the dark background and light text in dark mode', () => {
+    const vars = paletteBackgroundVars(palette, true);
+    expect(vars['--ion-background-color']).toBe('#0a1420');
+    expect(vars['--ion-text-color']).toBe('#f4f6f5');
+  });
+
+  it('falls back to the light background in dark mode when backgroundDark is absent', () => {
+    const noDark: Palette = { ...palette, backgroundDark: undefined };
+    expect(paletteBackgroundVars(noDark, true)['--ion-background-color']).toBe('#eef4fb');
+  });
+
+  it('returns nothing when the palette defines no background', () => {
+    const bare: Palette = {
+      id: 'x',
+      name: 'X',
       primary: '#0a84ff',
       secondary: '#0b1f33',
       tertiary: '#30c8c9',
-      background: '#ffffff',
     };
-    const withoutBg = getPalette('databus');
-    expect(paletteToCssVars(withBg)['--ion-background-color']).toBe('#ffffff');
-    expect(paletteToCssVars(withoutBg)['--ion-background-color']).toBeUndefined();
+    expect(paletteBackgroundVars(bare, false)).toEqual({});
+    expect(paletteBackgroundVars(bare, true)).toEqual({});
   });
 });
 

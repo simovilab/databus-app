@@ -91,6 +91,42 @@
             </ion-select>
           </ion-item>
         </ion-list>
+
+        <h2 class="settings-section-title">Tema</h2>
+        <ion-list lines="full">
+          <ion-radio-group
+            :value="settings.paletteId"
+            data-testid="setting-palette"
+            @ion-change="update({ paletteId: $event.detail.value })"
+          >
+            <ion-item v-for="palette in palettes" :key="palette.id">
+              <ion-radio
+                :value="palette.id"
+                label-placement="end"
+                justify="start"
+                :data-testid="`palette-${palette.id}`"
+              >
+                <div class="palette-option">
+                  <span class="palette-name">{{ palette.name }}</span>
+                  <span class="palette-swatches" aria-hidden="true">
+                    <span
+                      class="palette-swatch"
+                      :style="{ backgroundColor: palette.primary }"
+                    />
+                    <span
+                      class="palette-swatch"
+                      :style="{ backgroundColor: palette.secondary }"
+                    />
+                    <span
+                      class="palette-swatch"
+                      :style="{ backgroundColor: palette.tertiary }"
+                    />
+                  </span>
+                </div>
+              </ion-radio>
+            </ion-item>
+          </ion-radio-group>
+        </ion-list>
       </template>
     </ion-content>
 
@@ -115,6 +151,8 @@ import {
   IonLabel,
   IonList,
   IonPage,
+  IonRadio,
+  IonRadioGroup,
   IonSegment,
   IonSegmentButton,
   IonSelect,
@@ -131,12 +169,14 @@ import { useRouter } from 'vue-router';
 import ProfileEditModal from '@/components/user/ProfileEditModal.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
+import { PALETTES } from '@/theme/palettes';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);
 const update = settingsStore.update;
+const palettes = PALETTES;
 
 const segment = ref<'profile' | 'settings'>('profile');
 const pending = ref(false);
@@ -201,5 +241,39 @@ async function logout(): Promise<void> {
   text-align: center;
   color: var(--ion-color-medium);
   font-size: 0.8rem;
+}
+
+.settings-section-title {
+  margin: var(--app-spacing-lg, 24px) 0 var(--app-spacing-xs, 4px);
+  padding: 0 var(--app-spacing-md, 16px);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ion-color-medium);
+}
+
+.palette-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--app-spacing-md, 16px);
+  width: 100%;
+}
+
+.palette-name {
+  font-size: 0.95rem;
+}
+
+.palette-swatches {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.palette-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
 }
 </style>

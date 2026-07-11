@@ -6,6 +6,8 @@
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import { Preferences } from '@capacitor/preferences';
+import { applyPalette } from '@/theme/applyPalette';
+import { DEFAULT_PALETTE_ID, getPalette } from '@/theme/palettes';
 
 const STORAGE_KEY = 'databus.settings';
 
@@ -21,6 +23,8 @@ export interface AppSettings {
   keepScreenOn: boolean;
   // Interface language.
   language: 'es' | 'en';
+  // Chosen color palette (see theme/palettes.ts). Applied on load and update.
+  paletteId: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -28,6 +32,7 @@ const DEFAULTS: AppSettings = {
   backgroundTelemetry: true,
   keepScreenOn: true,
   language: 'es',
+  paletteId: DEFAULT_PALETTE_ID,
 };
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -35,18 +40,25 @@ export const useSettingsStore = defineStore('settings', () => {
 
   async function loadFromStorage(): Promise<void> {
     const { value } = await Preferences.get({ key: STORAGE_KEY });
-    if (!value) return;
-    try {
-      const parsed = JSON.parse(value) as Partial<AppSettings>;
-      // Merge over defaults so a newly-added key is never undefined.
-      settings.value = { ...DEFAULTS, ...parsed };
-    } catch {
-      settings.value = { ...DEFAULTS };
+    if (value) {
+      try {
+        const parsed = JSON.parse(value) as Partial<AppSettings>;
+        // Merge over defaults so a newly-added key is never undefined.
+        settings.value = { ...DEFAULTS, ...parsed };
+      } catch {
+        settings.value = { ...DEFAULTS };
+      }
     }
+    // Apply the (possibly stored) palette so the app boots in the chosen theme.
+    applyPalette(getPalette(settings.value.paletteId));
   }
 
   async function update(patch: Partial<AppSettings>): Promise<void> {
     settings.value = { ...settings.value, ...patch };
+    // Re-theme immediately when the palette changes.
+    if (patch.paletteId !== undefined) {
+      applyPalette(getPalette(settings.value.paletteId));
+    }
     await Preferences.set({
       key: STORAGE_KEY,
       value: JSON.stringify(settings.value),

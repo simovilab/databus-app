@@ -35,6 +35,7 @@ describe('useSettingsStore', () => {
     expect(store.settings.keepScreenOn).toBe(true);
     expect(store.settings.language).toBe('es');
     expect(store.settings.displayName).toBe('');
+    expect(store.settings.paletteId).toBe('databus');
   });
 
   it('update() patches, persists, and keeps other keys', async () => {

@@ -31,7 +31,13 @@ function getBaseUrl(): string {
       'VITE_API_BASE_URL is not configured (set it in app/.env, see .env.example)'
     );
   }
-  return baseUrl.replace(/\/+$/, '');
+  // A relative base (e.g. "/api" via the Vite dev proxy) must be resolved
+  // against the browser origin so new URL() below gets an absolute URL.
+  // The request still goes same-origin → Vite proxy → backend (no CORS).
+  const resolved = baseUrl.startsWith('/')
+    ? `${window.location.origin}${baseUrl}`
+    : baseUrl;
+  return resolved.replace(/\/+$/, '');
 }
 
 function buildUrl(path: string, params?: Record<string, string>): string {

@@ -25,7 +25,7 @@ interface VueApp {
 
 /**
  * Seeds the auth store on the live Pinia instance so the router guard admits
- * /tabs/*, then navigates to the trips tab. Uses the Vue 3 dev-mode
+ * /tabs/*, then navigates to the runs tab. Uses the Vue 3 dev-mode
  * `__vue_app__` handle on the mount element (available under vite dev, which
  * is what the e2e baseUrl points at). Requires the app to have booted first.
  */
@@ -48,7 +48,7 @@ function seedAuth(): Cypress.Chainable<void> {
         throw new Error('auth store not registered in Pinia');
       }
       authStore.$patch({ ...SESSION });
-      app.config.globalProperties.$router.replace('/tabs/trips');
+      app.config.globalProperties.$router.replace('/tabs/runs');
     });
 }
 

@@ -38,6 +38,25 @@ export interface ActiveRun {
   state: RunState;
 }
 
+/**
+ * A finished run recorded in the local history log. The backend exposes no
+ * "list my runs" endpoint (the run ViewSet is disabled), so the app keeps its
+ * own append-only history in @capacitor/preferences, written when a run
+ * reaches a terminal state. Per-run detail (the FSM timeline) is still fetched
+ * live from GET /runs/<id>/history/.
+ */
+export interface RunHistoryEntry {
+  runId: string;
+  vehicleId: string;
+  routeId: string;
+  tripId: string;
+  directionId: number;
+  shapeId: string;
+  finalState: RunState;
+  startedAt: string; // ISO 8601, when the run was created on this device
+  endedAt: string; // ISO 8601, when it reached a terminal state
+}
+
 /** A single GPS sample, ready to publish to the telemetry broker. */
 export interface Fix {
   latitude: number;

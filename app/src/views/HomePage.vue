@@ -12,7 +12,7 @@
       </section>
 
       <section v-if="activeRun" class="home-run">
-        <ion-card button detail="false" @click="goToTrips">
+        <ion-card button detail="false" @click="goToRuns">
           <ion-card-header>
             <ion-card-title>Run en curso</ion-card-title>
             <ion-card-subtitle>{{ activeRun.routeId }} · {{ activeRun.tripId }}</ion-card-subtitle>
@@ -30,13 +30,30 @@
       <section v-else class="home-empty">
         <EmptyState
           title="Sin run activo"
-          message="Inicia un run desde la pestaña Trips para comenzar a transmitir tu posición."
+          message="Inicia un run desde la pestaña Runs para comenzar a transmitir tu posición."
           :icon="busOutline"
         >
           <template #action>
-            <ion-button @click="goToTrips" fill="outline">Iniciar un run</ion-button>
+            <ion-button @click="goToRuns" fill="outline">Iniciar un run</ion-button>
           </template>
         </EmptyState>
+      </section>
+
+      <section v-if="recentRuns.length" class="home-recent">
+        <div class="home-recent__header">
+          <h2 class="home-recent__title">Actividad reciente</h2>
+          <ion-button
+            fill="clear"
+            size="small"
+            data-testid="home-see-more"
+            @click="goToRuns"
+          >Ver más</ion-button>
+        </div>
+        <run-history-list
+          :entries="recentRuns"
+          :max="3"
+          @select="goToRuns"
+        />
       </section>
     </ion-content>
   </ion-page>
@@ -68,16 +85,20 @@ import { busOutline, radioButtonOn } from 'ionicons/icons';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import EmptyState from '@/components/ui/EmptyState.vue';
+import RunHistoryList from '@/components/runs/RunHistoryList.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRunStore } from '@/stores/run';
+import { useRunHistoryStore } from '@/stores/runHistory';
 import type { RunState } from '@/types/domain';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const runStore = useRunStore();
+const runHistoryStore = useRunHistoryStore();
 
 const firstName = computed(() => authStore.session?.firstName ?? 'operador');
 const activeRun = computed(() => runStore.activeRun);
+const recentRuns = computed(() => runHistoryStore.entries);
 
 // Color cue for the state chip: green once actively tracking, medium
 // otherwise. Kept intentionally coarse — A4 owns the rich progress UI.
@@ -88,8 +109,8 @@ const stateColor = computed<'success' | 'warning' | 'medium'>(() => {
   return 'medium';
 });
 
-function goToTrips(): void {
-  router.push('/tabs/trips');
+function goToRuns(): void {
+  router.push('/tabs/runs');
 }
 </script>
 
@@ -121,5 +142,21 @@ function goToTrips(): void {
 
 .home-empty {
   margin-top: var(--app-spacing-xl, 32px);
+}
+
+.home-recent {
+  margin-top: var(--app-spacing-xl, 32px);
+}
+
+.home-recent__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home-recent__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 </style>

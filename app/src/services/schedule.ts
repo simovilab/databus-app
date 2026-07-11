@@ -2,7 +2,13 @@
 // Verified against ../databus/backend/api/{urls,views,serializers}.py.
 
 import { apiGet } from '@/services/apiClient';
-import type { Route, Trip, Vehicle } from '@/types/api';
+import type {
+  Route,
+  RunHistoryResponse,
+  RunStateResponse,
+  Trip,
+  Vehicle,
+} from '@/types/api';
 
 /** GET /routes/ — all GTFS routes for the current feed. */
 export function getRoutes(): Promise<Route[]> {
@@ -45,4 +51,22 @@ function vehicleIdFromUrl(url: string | undefined): string {
   // ".../api/vehicle/unit-01/?format=json" or ".../api/vehicle/unit-01/"
   const path = url.split('?')[0].replace(/\/+$/, '');
   return path.substring(path.lastIndexOf('/') + 1);
+}
+
+/**
+ * GET /runs/<id>/state/ — the run's current lifecycle state. Returns 404
+ * (thrown as ApiError with status 404) when the run does not exist; the
+ * run-history store uses that to prune stale local entries.
+ */
+export function getRunState(runId: string): Promise<RunStateResponse> {
+  return apiGet<RunStateResponse>(`/runs/${runId}/state/`);
+}
+
+/**
+ * GET /runs/<id>/history/ — the ordered FSM transition timeline for a run
+ * (RunHistoryView). Used by the run-details modal; this is the only per-run
+ * read the backend exposes (there is no run-list endpoint).
+ */
+export function getRunHistory(runId: string): Promise<RunHistoryResponse> {
+  return apiGet<RunHistoryResponse>(`/runs/${runId}/history/`);
 }

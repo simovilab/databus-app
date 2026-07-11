@@ -1,0 +1,69 @@
+# databus-app
+
+> Ionic Vue 8 + Capacitor 8 operator/on-board client for the **Databús** transit
+> system (UCR/SIMOVI). It is a REST UI ("warm path": login, start/end run,
+> lifecycle) **and** an MQTT GPS telemetry publisher ("hot path"). It has **no
+> backend of its own** — all server behavior lives in sibling repos.
+
+## Orientation (read these first)
+
+- [README.md](./README.md): full architecture, how it works, dev/prod, testing, TODO.
+- [DATABUS_INTEGRATION.md](./DATABUS_INTEGRATION.md): backend contract + prioritized "asks for the databus team". Hand this to a databus agent.
+- [SITEMAP.md](./SITEMAP.md): navigation/screen spec (Spanish).
+- [plans/master-plan.md](./plans/master-plan.md): authoritative build spec; §6 = frozen contracts (store/service signatures, telemetry seam, MQTT payload).
+
+## Sibling repos (server side — this app is one client of it)
+
+- `../databus` — Django/DRF orchestrator (`:8000` dev / 443 TLS prod), NanoMQ broker (1883 dev / 8883 TLS prod), Redis, Celery, the run-lifecycle FSM. **Every backend fact is verified here** — key files: `backend/api/{urls,views,serializers}.py`, `backend/runs/domain/lifecycle/{transitions,guards,events,actions}.py`.
+- `../databus-sim` — fleet simulator that drives runs to completion via GTFS-RT telemetry. **Use it to test the full lifecycle** (browser alone can't advance a run past Confirmed).
+- `../context` — system docs.
+
+## Where things are (all under `app/`)
+
+- `src/views/` — one page per screen: Splash, Login, Home, Runs, Messages, User, Tabs.
+- `src/components/trips/` — `TripSetupModal.vue` (run wizard), `RunProgress.vue`.
+- `src/components/runs/` — `RunHistoryList.vue`, `RunDetailsModal.vue`.
+- `src/components/user/` — `ProfileEditModal.vue`. `src/components/ui/` — AppError, AppLoading, EmptyState, `BrandLogo.vue`.
+- `src/stores/` (Pinia setup stores) — `auth.ts`, `run.ts` (owns telemetry + create/end + history recording), `runHistory.ts` (local log + `reconcile()`), `settings.ts` (device prefs + palette).
+- `src/services/` — `apiClient.ts` (typed fetch, Token auth, ApiError), `schedule.ts` (GTFS/run REST lookups), `geolocation.ts`, `telemetry/` (the seam: `runtime.ts` + `webRuntime.ts` + `nativeRuntime.ts`).
+- `src/theme/` — `variables.css`, `palettes.ts` (define palettes here), `applyPalette.ts` (derives Ionic vars at runtime).
+- `src/types/` — `api.ts` (wire types), `domain.ts` (app types). `src/router/index.ts` — routes + auth guard.
+- `plugins/capacitor-databus-telemetry/` — native TCP+TLS MQTT plugin (Kotlin + Swift): foreground service, background location, store-and-forward. Prod telemetry path.
+- `public/logo/` — Databús wordmark (dark/light) + "b" mark (favicon/touch icon).
+- `tests/unit/` (vitest), `tests/e2e/` (cypress).
+
+## Critical domain facts (each was a real bug — don't relearn them)
+
+- **A GTFS trip already carries `route_id` + `direction_id` + `shape_id`.** Run wizard is `route → trip → vehicle` (no "direction" step). Trips come from `GET /api/trips/?route_id=` — NOT the broken `which-shapes`/`find-trips`/`service-today` endpoints (they read empty tables: RouteStop/TripTime/CalendarDate).
+- **Vehicle serializer omits `id`** (HyperlinkedModelSerializer emits `url` only). `schedule.getVehicles()` backfills `id` from the url tail.
+- **Run lifecycle events**: confirm = `run_confirmed_by_operator`. Operator end = `run_interrupted` (from In Progress/No Signal) or `cancel_run` (earlier), each with `details:{actor_role:"operator"}`. **`run_completed` is SYSTEM-only** (guard `is_at_terminal_stop`); the app must never send it (422s). The app records history on ANY observed terminal state — via manual end OR the ~5s poll — so system-completed runs still appear.
+- **One active run per operator/vehicle/trip** — bound in Redis until terminal; a second create-run for a bound operator is rejected with a real message the app surfaces.
+- **Telemetry is fire-and-forget**: `createRun` does NOT await `telemetry.start()` (broker unreachable in dev must not block/trap the modal). Health shows via `telemetry.status`.
+- **Store rehydration happens in `main.ts` BEFORE `app.use(router)`** so the auth guard doesn't bounce a refresh to /login. Native has no refresh; same path runs on cold start (Preferences = OS storage).
+- **MQTT contract**: topic `transit/vehicle/<vehicle_id>/position`, QoS 0, payload `{latitude,longitude,bearing?,speed?,timestamp?}`.
+
+## Dev vs prod (important)
+
+| | dev | prod |
+|---|---|---|
+| API | `http://localhost:8000` via **Vite proxy** at `/api` (sidesteps CORS — backend has no django-cors-headers) | `https://<host>` 443/TLS |
+| Telemetry | MQTT over **WebSocket** (`ws://…:8083/mqtt`, mqtt.js) in browser | **raw MQTT TCP+TLS 8883** via native plugin (no WS listener in prod) |
+| Runtime | `createWebRuntime` (browser GPS, in-mem queue) | `createNativeRuntime` (background loc, native buffer) |
+
+The prod TCP+TLS path only runs on a native device build — it cannot be tested in a browser.
+
+## Workflow
+
+```bash
+cd app
+npm run dev -- --port 5173 --strictPort   # strictPort avoids silent port drift
+npm run lint && npx vitest run && npm run build   # all green: lint · 90 unit tests · build
+```
+
+- Demo login: `demo` / `demo12345` (seeded in `../databus`).
+- **No PR to `main` without explicit user go-ahead.** Branch `feat/vertical-slice-v0` is 40 commits ahead of main; upstream tracking is configured so a bare `git push` works once the user has access.
+- Env: `app/.env` — `VITE_API_BASE_URL=/api`, `VITE_MQTT_URL=ws://localhost:8083/mqtt`.
+
+## Open work (see README "What's left" + DATABUS_INTEGRATION "asks")
+
+App: resume active run on boot (needs backend endpoint), Messages backend, Alerts (out of scope), native device validation, i18n wiring. Backend asks: operator current-run endpoint, run-list endpoint, cancel-from-Initialized transition, native broker TLS/auth config, CORS, VehicleSerializer `id`.

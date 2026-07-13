@@ -1,0 +1,45 @@
+# Traefik dynamic (file-provider) config. See deploy/VPS_HTTPS_TESTING.md (A5/A6).
+#
+# Two jobs:
+#   1. Define the @file middlewares that databus/compose.prod.yml references
+#      (security-headers, rate-limit, compression) — without these, the backend
+#      services fail to route.
+#   2. Define the same-origin /api router pointing at the orchestrator by container
+#      name (both share traefik_proxy) — this keeps the databus repo UNEDITED.
+#
+# IMPORTANT: replace the Host() below with your APP_DOMAIN
+# (e.g. app.203.0.113.5.sslip.io, or app.databus.simovilab.org later).
+
+http:
+  middlewares:
+    security-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        stsSeconds: 31536000
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+    compression:
+      compress: {}
+
+  routers:
+    # Same-origin API: /api on the app host → Django orchestrator. Priority 10 beats
+    # the static app router (priority 1). No path strip: the app calls /api/login/ and
+    # Django serves under /api/ (matches the dev Vite proxy).
+    app-api:
+      rule: "Host(`app.167.233.130.36.sslip.io`) && PathPrefix(`/api`)"
+      entryPoints: [websecure]
+      service: databus-orchestrator
+      priority: 10
+      middlewares: [security-headers, rate-limit]
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    databus-orchestrator:
+      loadBalancer:
+        servers:
+          - url: "http://orchestrator:8000"

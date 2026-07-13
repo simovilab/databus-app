@@ -1,0 +1,9 @@
+# Deploy-local, never committed. The tracked template is .env.example.
+.env
+
+# Built SPA shipped here in Part B (B5: rsync app/dist → deploy/dist). Artifact only.
+dist/
+
+# Let's Encrypt account/cert store, if Traefik ever writes it here.
+acme.json
+traefik/acme.json

@@ -1,0 +1,35 @@
+# Traefik static config. Only needed if the VPS has no Traefik yet.
+# See deploy/VPS_HTTPS_TESTING.md (A6). databus/compose.prod.yml assumes an external
+# `traefik_proxy` network and these @file middlewares exist (defined in dynamic.yml).
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+  mqtt:                      # only needed for the telemetry tier (MQTT over TLS 8883)
+    address: ":8883"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: traefik_proxy
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: ops@simovilab.org           # ← set a real contact address
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+      # While iterating, uncomment to use LE STAGING and avoid the prod rate limit
+      # (5 duplicate certs/week); remove once routing works, then recreate Traefik:
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory

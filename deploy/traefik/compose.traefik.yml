@@ -1,0 +1,33 @@
+# Traefik service. Only needed if the VPS has no Traefik yet.
+# See deploy/VPS_HTTPS_TESTING.md (A6 / B6).
+#
+# Usage (on the VPS):
+#   docker network create traefik_proxy      # once
+#   docker compose -f compose.traefik.yml up -d
+#
+# Put dynamic.yml under ./dynamic/ (the file provider watches the directory).
+
+name: traefik
+
+services:
+  traefik:
+    image: traefik:v3
+    restart: unless-stopped
+    command: --configFile=/etc/traefik/traefik.yml
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8883:8883"          # telemetry tier only
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks: [traefik_proxy]
+
+volumes:
+  traefik_letsencrypt:
+
+networks:
+  traefik_proxy:
+    external: true

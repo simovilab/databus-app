@@ -1,0 +1,38 @@
+# databus-app static web service — serves app/dist over Traefik.
+# See deploy/VPS_HTTPS_TESTING.md (A4 / B9).
+#
+# Usage (on the VPS, after Traefik + the backend subset are up):
+#   docker compose --env-file .env -f compose.app.yml up -d
+#
+# Requires:
+#   - the external `traefik_proxy` network (created in Part B),
+#   - ./dist  (the built app/dist, shipped in Part B / B5),
+#   - ./nginx.conf,
+#   - deploy/.env providing APP_DOMAIN (see .env.example).
+
+name: databus-app-web
+
+services:
+  app:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [traefik_proxy]
+    labels:
+      - "traefik.enable=true"
+      # Low priority: the /api router (Traefik file provider) is priority 10 and wins
+      # for API paths; everything else on this host serves the static app.
+      - "traefik.http.routers.app.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls=true"
+      - "traefik.http.routers.app.tls.certresolver=${CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.app.priority=1"
+      - "traefik.http.routers.app.middlewares=security-headers@file,compression@file"
+      - "traefik.http.services.app.loadbalancer.server.port=80"
+      - "traefik.docker.network=traefik_proxy"
+
+networks:
+  traefik_proxy:
+    external: true

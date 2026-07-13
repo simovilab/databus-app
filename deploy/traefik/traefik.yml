@@ -26,7 +26,7 @@ providers:
 certificatesResolvers:
   letsencrypt:
     acme:
-      email: ops@simovilab.org           # ← set a real contact address
+      email: dotjae609@gmail.com         # LE cert-expiry notices land here
       storage: /letsencrypt/acme.json
       httpChallenge:
         entryPoint: web

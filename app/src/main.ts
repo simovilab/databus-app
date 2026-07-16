@@ -5,6 +5,7 @@ import router from './router';
 import { useAuthStore } from '@/stores/auth';
 import { useRunHistoryStore } from '@/stores/runHistory';
 import { useSettingsStore } from '@/stores/settings';
+import { registerServiceWorker } from '@/services/pwa';
 
 import { IonicVue } from '@ionic/vue';
 
@@ -77,5 +78,9 @@ bootstrap()
     app.use(router);
     router.isReady().then(() => {
       app.mount('#app');
+      // After mount, and deliberately not awaited: the service worker is a
+      // progressive enhancement for the web/PWA build, so it must never delay
+      // first paint or fail boot. No-ops on native (see services/pwa.ts).
+      void registerServiceWorker().catch(() => undefined);
     });
   });

@@ -41,10 +41,18 @@ Traefik path-routes `/api/*` on that host to the Django `orchestrator`; everythi
 else goes to the static app. This needs **one DNS record**, no separate api domain.
 
 **Minimal backend subset** (chosen for the 4 vCPU / 8 GB shared box): only
-`orchestrator + database + state` from `databus/compose.prod.yml`. Skips the
-analytics tier (Prefect/Flower/docs/Nuxt) and the async workers. This is enough for
-the **warm path** (login → create-run → confirm → end). See
+`orchestrator + database + state`. Skips the analytics tier (Prefect/Flower/docs/
+Nuxt) and the async workers. This is enough for the **warm path** (login →
+create-run → confirm → end). See
 [Telemetry tier](#telemetry-tier--test-both-paths-on-vps) to add live positions.
+
+> **Which compose file:** this runbook was written against `databus/compose.prod.yml`,
+> but the stack actually deployed on the box is **`compose.dev.yml`** (project
+> `databus-dev`). Every `docker compose` command below therefore says `compose.dev.yml`.
+> The dev compose has two consequences the prod one does not — it does not join
+> `traefik_proxy`, and it publishes Django to the public internet with `DEBUG=True`.
+> **Read [B7](#b7-bring-up-the-minimal-backend-subset-from-the-databus-repo) before
+> relying on this deployment.**
 
 ---
 
@@ -109,11 +117,19 @@ Create **`app/.env.production`** (Vite auto-loads it for `vite build`):
 # same host, so a RELATIVE base is correct (resolved against window.location.origin).
 VITE_API_BASE_URL=/api
 
-# App self-transmit is OFF for this build (NavSat/bridge owns positions server-side).
-# The web publisher only connects if telemetry.start() is called; this value is a
-# placeholder until a WSS MQTT listener is exposed in prod. See DATABUS_INTEGRATION.md §5–§6.
+# App self-transmit is OFF for this build (NavSat/bridge owns positions server-side),
+# and prod exposes raw MQTT TCP+TLS 8883 with no WS listener — so a browser/PWA build
+# has no transport it can reach at all. 'false' makes the web runtime report
+# status='unavailable' and skip the publisher + GPS watcher entirely; without it the
+# runtime sits in 'buffering', which promises store-and-forward against a broker that
+# does not exist. Native ignores this flag. See DATABUS_INTEGRATION.md §5–§6 and the
+# README's telemetry-seam section.
+VITE_TELEMETRY_ENABLED=false
 VITE_MQTT_URL=wss://REPLACE_IF_APP_TELEMETRY_ENABLED/mqtt
 ```
+
+> The file in the repo already contains this — it is reproduced here so Part A reads
+> standalone. Verify with `grep VITE_TELEMETRY_ENABLED app/.env.production`.
 
 ### A2. Build the SPA (do the Node build HERE, not on the VPS)
 
@@ -460,17 +476,76 @@ docker logs -f traefik                      # watch for ACME / config errors
 
 ### B7. Bring up the minimal backend subset (from the databus repo)
 
+> **What is actually deployed today is `compose.dev.yml`, not `compose.prod.yml`.**
+> The live stack is project **`databus-dev`** (`~/git/databus/compose.dev.yml`).
+> Running the `compose.prod.yml` commands this section used to show would **not**
+> touch the running stack — it would stand up a **second, parallel** one. The rest
+> of this section describes the deployment as it exists. See the security callout
+> below before leaving it this way.
+
 Compose resolves `depends_on`, so naming the three services also starts nothing
 extra:
 
 ```bash
-cd ../../..            # to the databus repo root
-docker compose -f compose.prod.yml up -d orchestrator database state
-docker compose -f compose.prod.yml ps
+cd ~/git/databus
+docker compose -f compose.dev.yml up -d orchestrator database state
+docker compose -f compose.dev.yml ps
 ```
 
-Confirm `orchestrator` joined `traefik_proxy` (it does per `compose.prod.yml`) so
-Traefik can reach `http://orchestrator:8000`.
+#### ⚠️ `compose.dev.yml` does NOT join `traefik_proxy` — connect it by hand
+
+Unlike `compose.prod.yml`, the dev compose puts the orchestrator on its own
+`databus_network` and declares no Traefik labels. Traefik's `/api` router (A5)
+resolves the container **by name** on `traefik_proxy`, so without an attachment
+`/api` returns **502**. The running container was connected manually:
+
+```bash
+docker network connect traefik_proxy databus-dev-orchestrator-1
+# verify: must list BOTH databus_network and traefik_proxy (alias: orchestrator)
+docker inspect databus-dev-orchestrator-1 \
+  --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{$v.Aliases}}
+{{end}}'
+```
+
+**This attachment is not in any compose file, so it is lost every time the
+container is recreated** (`up -d --force-recreate`, a rebuild, a host reboot that
+recreates containers). If `/api` suddenly 502s, this is the first thing to check.
+Making it durable means either adding `traefik_proxy` as an external network to the
+orchestrator service in `compose.dev.yml`, or moving to `compose.prod.yml` (which
+joins it properly) — both are databus-repo changes, out of scope for this runbook.
+
+#### 🔴 Security: the dev compose publishes Django to the whole internet
+
+`compose.dev.yml` has `ports: "${BACKEND_PORT:-8000}:8000"`, which binds **0.0.0.0**,
+and `.env.dev` sets **`DEBUG=True`**. Verified live on this box:
+
+```bash
+# From ANY machine on the internet — 200 OK, plaintext, no TLS:
+curl -H "Host: $APP_DOMAIN" http://<VPS_IP>:8000/api/
+```
+
+Three problems, all live:
+
+1. **The whole API is reachable over plaintext HTTP**, bypassing Traefik and TLS.
+   `/api/login/` included — operator credentials cross the wire in cleartext.
+2. **`DEBUG=True` on a public host.** Debug 404s enumerate the entire URLconf; a
+   debug 500 dumps stack traces, local variables and settings — typically including
+   `SECRET_KEY` and DB credentials.
+3. **`ufw` does not protect you here.** It reports only `80,443/tcp` open and is
+   still bypassed: Docker publishes ports via its own iptables `DOCKER` chain, which
+   is evaluated **before** ufw's `INPUT` chain. Do not rely on `ufw status` to tell
+   you what is exposed — check from off-box.
+
+Mitigations, in order of preference (all are databus-repo/infra changes):
+
+- Bind to loopback only — `ports: "127.0.0.1:8000:8000"` — so Traefik still reaches
+  the container over `traefik_proxy` but the internet cannot.
+- Or drop the `ports:` mapping entirely; Traefik does not need it (it talks to
+  `orchestrator:8000` over the shared Docker network).
+- Or block 8000 at the **Hetzner Cloud Firewall**, which sits upstream of Docker's
+  iptables and therefore actually works where ufw does not.
+- Set **`DEBUG=False`** for any internet-reachable deployment, and **rotate
+  `SECRET_KEY`** if a debug 500 page may have been served publicly.
 
 ### B8. Migrate + seed (now scripted — no databus-team dependency)
 
@@ -484,11 +559,11 @@ so seed those explicitly and set a login password:
 cd <databus repo>
 
 # users (fabian/maria/jose) + operators + vehicles (SJB1234, SJB5678):
-docker compose -f compose.prod.yml exec orchestrator \
+docker compose -f compose.dev.yml exec orchestrator \
     uv run python manage.py loaddata auth.json operations.json
 
 # set a known password on a seeded operator so the app can log in:
-docker compose -f compose.prod.yml exec orchestrator \
+docker compose -f compose.dev.yml exec orchestrator \
     uv run python manage.py shell -c "
 from operations.models import Operator
 op = Operator.objects.first()
@@ -576,7 +651,7 @@ First bring up the broker + the worker that ingests telemetry (adds RabbitMQ —
 heavier; watch `docker stats` on the shared box):
 
 ```bash
-docker compose -f compose.prod.yml up -d telemetry-broker message-broker realtime-engine
+docker compose -f compose.dev.yml up -d telemetry-broker message-broker realtime-engine
 ```
 
 **Path A — NavSat bridge (MQTT).** Run `navsat-bridge` (its own repo/compose) with
@@ -610,7 +685,7 @@ exercise the lifecycle without either provider.
   traefik`) is light (~1–1.5 GB). The telemetry tier adds RabbitMQ + a worker —
   monitor `docker stats` given the box's other periodic tasks.
 - **Teardown:** `docker compose -f compose.app.yml down` (app),
-  `docker compose -f compose.prod.yml down` (backend),
+  `docker compose -f compose.dev.yml down` (backend),
   `docker compose -f compose.traefik.yml down` (Traefik). Add `-v` to drop volumes
   (DB data, LE certs) — only if you mean it.
 

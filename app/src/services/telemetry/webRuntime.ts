@@ -12,6 +12,18 @@ import type { TelemetryRuntime, TelemetryStatus } from '@/services/telemetry/run
 /** Cap the in-memory buffer so a long disconnect can't grow it unbounded. */
 const MAX_QUEUED_FIXES = 500;
 
+/**
+ * Explicit opt-OUT: only the literal string 'false' disables telemetry. Unset
+ * (dev, CI, native) keeps the transport on, so a forgotten VITE_MQTT_URL still
+ * throws loudly out of createTelemetryPublisher() instead of silently no-oping.
+ *
+ * Config-driven on purpose: exposing a WSS listener later is an env change
+ * (flag true + a real VITE_MQTT_URL), not a code change.
+ */
+function telemetryDisabled(): boolean {
+  return import.meta.env.VITE_TELEMETRY_ENABLED === 'false';
+}
+
 export function createWebRuntime(): TelemetryRuntime {
   const status: Ref<TelemetryStatus> = ref('idle');
   const lastFix: Ref<Fix | null> = ref(null);
@@ -64,6 +76,14 @@ export function createWebRuntime(): TelemetryRuntime {
   }
 
   async function start(cfg: { vehicleId: string }): Promise<void> {
+    if (telemetryDisabled()) {
+      // Return before the publisher and the watcher: no reconnect loop against
+      // a host that will never resolve, and no GPS permission prompt for fixes
+      // that have nowhere to go. stop() stays safe — both handles are undefined.
+      status.value = 'unavailable';
+      return;
+    }
+
     status.value = 'starting';
     vehicleId = cfg.vehicleId;
     queue = [];

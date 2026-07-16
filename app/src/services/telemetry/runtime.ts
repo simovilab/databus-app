@@ -8,7 +8,19 @@ import type { Fix } from '@/types/domain';
 import { createWebRuntime } from '@/services/telemetry/webRuntime';
 import { createNativeRuntime } from '@/services/telemetry/nativeRuntime';
 
-export type TelemetryStatus = 'idle' | 'starting' | 'streaming' | 'buffering' | 'error';
+// 'unavailable' = this build has no telemetry transport at all (web/PWA built
+// with VITE_TELEMETRY_ENABLED=false, because prod exposes raw TCP+TLS 8883 and
+// no WS listener). Distinct from 'buffering', which promises store-and-forward:
+// fixes held locally and flushed on reconnect. With no broker to reconnect to
+// that promise is false, so the disabled build needs its own honest state.
+// Never set by the native runtime.
+export type TelemetryStatus =
+  | 'idle'
+  | 'starting'
+  | 'streaming'
+  | 'buffering'
+  | 'error'
+  | 'unavailable';
 
 export interface TelemetryRuntime {
   start(cfg: { vehicleId: string }): Promise<void>; // begins GPS + publishing

@@ -50,6 +50,54 @@ describe('createWebRuntime', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  describe('when VITE_TELEMETRY_ENABLED=false (web build with no broker)', () => {
+    beforeEach(() => {
+      vi.stubEnv('VITE_TELEMETRY_ENABLED', 'false');
+    });
+
+    it('reports status=unavailable instead of the misleading buffering state', async () => {
+      const runtime = createWebRuntime();
+      await runtime.start({ vehicleId: 'veh-1' });
+
+      // 'buffering' promises store-and-forward: "held locally, flushed on
+      // reconnect". With no broker to reconnect to that is a lie, so the
+      // disabled build must report its own state.
+      expect(runtime.status.value).toBe('unavailable');
+    });
+
+    it('never constructs a publisher or prompts for GPS', async () => {
+      const runtime = createWebRuntime();
+      await runtime.start({ vehicleId: 'veh-1' });
+
+      // No publisher => no 1/sec DNS-failing reconnect loop on a phone.
+      expect(fakePublisher.connect).not.toHaveBeenCalled();
+      // No watcher => no location permission prompt for data that goes nowhere.
+      expect(fakeWatcher.start).not.toHaveBeenCalled();
+      expect(runtime.queuedCount.value).toBe(0);
+      expect(runtime.lastFix.value).toBeNull();
+    });
+
+    it('stop() is safe and returns to idle', async () => {
+      const runtime = createWebRuntime();
+      await runtime.start({ vehicleId: 'veh-1' });
+      await runtime.stop();
+
+      expect(fakeWatcher.stop).not.toHaveBeenCalled();
+      expect(fakePublisher.disconnect).not.toHaveBeenCalled();
+      expect(runtime.status.value).toBe('idle');
+    });
+  });
+
+  it('stays enabled when the flag is unset (dev default)', async () => {
+    const runtime = createWebRuntime();
+    await runtime.start({ vehicleId: 'veh-1' });
+
+    expect(fakePublisher.connect).toHaveBeenCalledTimes(1);
+    expect(fakeWatcher.start).toHaveBeenCalledTimes(1);
+    expect(runtime.status.value).not.toBe('unavailable');
   });
 
   it('starts idle, then streams once connected and a fix arrives', async () => {

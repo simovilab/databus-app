@@ -152,6 +152,8 @@ const telemetryLabel = computed(() => {
       return 'Buffering';
     case 'starting':
       return 'Connecting…';
+    case 'unavailable':
+      return 'Unavailable';
     case 'error':
       return 'Not connected';
     default:
@@ -167,6 +169,10 @@ const telemetryColor = computed(() => {
       return 'warning';
     case 'starting':
       return 'primary';
+    case 'unavailable':
+      // Not danger: nothing is broken and there is nothing to retry. This build
+      // simply has no transport, and the run itself is unaffected.
+      return 'medium';
     default:
       return 'danger';
   }
@@ -183,6 +189,9 @@ const telemetryDetail = computed(() => {
   }
   if (status === 'starting') {
     return 'Acquiring GPS and connecting to the broker…';
+  }
+  if (status === 'unavailable') {
+    return 'GPS reporting is not available in the browser — use the installed app. The run is unaffected.';
   }
   if (status === 'error') {
     return 'Telemetry is unavailable. The run continues; fixes will retry.';

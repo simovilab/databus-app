@@ -414,11 +414,37 @@ Either build on the box (needs Node — heavier) or, preferred, copy the artifac
 built in A2 from your machine:
 
 ```bash
-# from your workstation:
-rsync -av databus-app/app/dist/  <vps>:~/databus-app/deploy/dist/
+# from your workstation (repos live at ~/git/ on the VPS):
+rsync -av databus-app/app/dist/  <vps>:~/git/databus-app/deploy/dist/
 ```
 
-`deploy/compose.app.yml` bind-mounts `./dist` (i.e. `deploy/dist/`).
+`deploy/compose.app.yml` bind-mounts `./dist` (i.e. `deploy/dist/`). `dist/` is a
+**directory** mount, so rsyncing into it is picked up immediately — nginx serves the
+new files off disk with no restart.
+
+> ### ⚠️ Changing `nginx.conf` (or any single-file mount) needs `--force-recreate`
+>
+> `nginx.conf` is bind-mounted as a **single file**
+> (`./nginx.conf:/etc/nginx/conf.d/default.conf:ro`), and Docker binds a file by
+> **inode**. `rsync` (like most editors) writes a temp file and renames it over the
+> target — a **new inode** — so the container stays pinned to the old, now-unlinked
+> file and **keeps serving the previous config**.
+>
+> This fails silently and convincingly: `nginx -t` reports "syntax is ok" and
+> `nginx -s reload` succeeds, because both are faithfully validating and reloading
+> the **stale** config. Only the response headers reveal it.
+>
+> ```bash
+> # Confirm what the container ACTUALLY has (inodes will differ if you were bitten):
+> cd ~/git/databus-app/deploy
+> C=$(docker compose --env-file .env -f compose.app.yml ps -q app)
+> stat -c 'host: %i' nginx.conf; docker exec $C stat -c 'container: %i' /etc/nginx/conf.d/default.conf
+>
+> # The fix — reload is NOT enough, the container must be recreated:
+> docker compose --env-file .env -f compose.app.yml up -d --force-recreate app
+> ```
+>
+> Directory mounts (`dist/`) are immune. This only bites single-file mounts.
 
 ### B6. Bring up Traefik + the external network
 

@@ -26,10 +26,11 @@
 - `src/components/user/` — `ProfileEditModal.vue`. `src/components/ui/` — AppError, AppLoading, EmptyState, `BrandLogo.vue`.
 - `src/stores/` (Pinia setup stores) — `auth.ts`, `run.ts` (owns telemetry + create/end + history recording), `runHistory.ts` (local log + `reconcile()`), `settings.ts` (device prefs + palette).
 - `src/services/` — `apiClient.ts` (typed fetch, Token auth, ApiError), `schedule.ts` (GTFS/run REST lookups), `geolocation.ts`, `telemetry/` (the seam: `runtime.ts` + `webRuntime.ts` + `nativeRuntime.ts`).
+- `src/services/pwa.ts` — service-worker registration. **Web only** — no-ops on native (same build feeds the Capacitor webview via `webDir: 'dist'`; a SW there strands the app on a stale precache).
 - `src/theme/` — `variables.css`, `palettes.ts` (define palettes here), `applyPalette.ts` (derives Ionic vars at runtime).
 - `src/types/` — `api.ts` (wire types), `domain.ts` (app types). `src/router/index.ts` — routes + auth guard.
 - `plugins/capacitor-databus-telemetry/` — native TCP+TLS MQTT plugin (Kotlin + Swift): foreground service, background location, store-and-forward. Prod telemetry path.
-- `public/logo/` — Databús wordmark (dark/light) + "b" mark (favicon/touch icon).
+- `public/logo/` — Databús wordmark (dark/light) + "b" mark (favicon/touch icon). `public/pwa/` — generated PWA icons (192, 512, maskable 512, apple-touch 180).
 - `tests/unit/` (vitest), `tests/e2e/` (cypress).
 
 ## Critical domain facts (each was a real bug — don't relearn them)
@@ -41,6 +42,9 @@
 - **Telemetry is fire-and-forget**: `createRun` does NOT await `telemetry.start()` (broker unreachable in dev must not block/trap the modal). Health shows via `telemetry.status`.
 - **Store rehydration happens in `main.ts` BEFORE `app.use(router)`** so the auth guard doesn't bounce a refresh to /login. Native has no refresh; same path runs on cold start (Preferences = OS storage).
 - **MQTT contract**: topic `transit/vehicle/<vehicle_id>/position`, QoS 0, payload `{latitude,longitude,bearing?,speed?,timestamp?}`.
+- **The PWA is a test/demo vehicle for the warm path, never a telemetry path.** A browser has no background GPS (fixes stop on screen lock) and prod exposes no WS listener. `VITE_TELEMETRY_ENABLED=false` (set in `.env.production`) makes the web runtime report `status='unavailable'` and skip the publisher + GPS watcher. Without it the runtime sits in **`'buffering'`**, which *promises store-and-forward* ("held locally, flushed on reconnect") against a broker that does not exist — a lie to the operator. Only the literal string `'false'` disables; unset keeps the loud throw on a missing `VITE_MQTT_URL`. Native ignores the flag entirely.
+- **The service worker must never touch `/api`.** The app is same-origin by design, so `workbox.navigateFallbackDenylist: [/^\/api/]` (vite.config.ts) is what stops Workbox answering API paths with `index.html`. There is **no** `runtimeCaching` for `/api` — deliberately: these are live run-lifecycle FSM reads, and a stale run state is worse than an error.
+- **`registerType: 'prompt'`, never `'autoUpdate'`.** autoUpdate reloads the page when a new SW activates; the active run lives only in the Pinia run store (resume-on-boot is still open work), so that would silently drop an operator's run mid-trip. Updates land on the next cold start instead.
 
 ## Dev vs prod (important)
 

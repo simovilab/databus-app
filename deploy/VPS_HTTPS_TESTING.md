@@ -500,13 +500,42 @@ Then on devices:
 
 1. Open `https://$APP_DOMAIN` in **iPhone Safari**, **iPad Safari**, and a
    **simulated Android** (Android Studio emulator Chrome, or Appetize/BrowserStack).
-2. On iOS: **Share → Add to Home Screen** for the full-screen PWA feel.
+2. **Install it.** The app ships a manifest + service worker, so this is a real
+   PWA install, not just a bookmark:
+   - iOS: **Share → Add to Home Screen**.
+   - Android Chrome: the **Install app** prompt, or ⋮ → *Add to Home screen*.
+
+   Then **cold-launch from the home-screen icon** and confirm:
+   - it opens **standalone** (no browser address bar) — that's `display: standalone`;
+   - the icon is the **cyan "b"** on an opaque tile (not a black square — iOS
+     composites transparent icons onto black, which is why apple-touch-icon points
+     at the opaque `pwa/apple-touch-icon-180x180.png`, not `logo/databus-mark.png`);
+   - your **session survives** the cold start (Preferences → localStorage on web,
+     rehydrated in `main.ts` before the router installs).
 3. Run the warm path end-to-end: **login → route → trip → vehicle → create-run →
    confirm → end**. Watch `docker logs orchestrator` for errors.
+4. **Offline shell check**: with the app open, turn on airplane mode and reload.
+   The shell must still paint (it's precached) and API calls must fail as the app's
+   own error states — *not* a browser "no internet" page, and never stale run data.
+   `/api` is explicitly denylisted from the service worker for exactly this reason.
 
 Expected: green padlock, login works, the run wizard lists routes/trips, create-run
 succeeds or surfaces the real backend message. (A run will not advance past Confirmed
 without telemetry — that's the tier below, and the sim in `../databus-sim`.)
+
+> **Telemetry will read "Unavailable" in the PWA — that is correct, not a bug.**
+> This build sets `VITE_TELEMETRY_ENABLED=false` (`app/.env.production`) because
+> prod exposes raw MQTT TCP+TLS 8883 with **no WS listener** for a browser to reach.
+> A PWA also gets **no background GPS**: fixes stop the moment the screen locks. So
+> the PWA validates the **warm path and the UI on real devices** — the hot path is
+> the native build's job, and the sim in `../databus-sim` drives runs to completion
+> without either. To enable web telemetry later, expose a WSS listener, set the flag
+> true and `VITE_MQTT_URL` to a real URL — no code change.
+
+> **Redeploying?** `deploy/nginx.conf` sends `no-cache` for `sw.js`, the workbox
+> runtime and the manifest. Do not "optimise" those into the long-cache block: a
+> cached `sw.js` pins every installed client to an old precache manifest, and a
+> redeploy would never reach the phones you handed out.
 
 ---
 

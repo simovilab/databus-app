@@ -59,6 +59,8 @@ Sibling repositories (expected as siblings of this repo):
 
 - **Ionic Vue 8** + **Vue 3** (Composition API, `<script setup lang="ts">`) + **Vite**
 - **Capacitor 8** — native shell (Android/iOS) + plugins (Geolocation, Preferences)
+- **vite-plugin-pwa** (Workbox) — installable web build for on-device testing
+  ([PWA](#pwa-installable-web-build)); registration is web-only
 - **Pinia** (setup stores) · **Vue Router** (Ionic router)
 - **mqtt.js** (WebSocket) for the web/dev telemetry transport
 - **Custom Capacitor plugin** (`app/plugins/capacitor-databus-telemetry/`) for
@@ -151,6 +153,58 @@ by `Capacitor.isNativePlatform()`:
 | Backgrounding | tied to the tab | foreground service, survives lock/background |
 
 **This split is deliberate — see [Testing: dev vs prod](#testing-dev-vs-prod).**
+
+#### `VITE_TELEMETRY_ENABLED=false` — the web build has no broker
+
+A browser build deployed to prod can reach **no** broker: prod exposes raw TCP+TLS
+8883 with no WS listener. Setting `VITE_TELEMETRY_ENABLED=false` (as
+`app/.env.production` does) makes the web runtime report `status='unavailable'` and
+skip the publisher and the GPS watcher entirely.
+
+This exists because the honest-looking failure is worse than none. Without the flag
+the runtime lands in **`'buffering'`** — which is the *store-and-forward* state, and
+therefore a promise that fixes are held locally and flushed on reconnect. With no
+broker to reconnect to that promise is false: the ring buffer fills to 500 and
+silently discards, mqtt.js retries a dead host every second, and the operator is
+prompted for GPS to feed a queue that never drains. The badge would read
+"Buffering, 500 queued" — indistinguishable from working.
+
+Only the literal string `'false'` disables it. Unset (dev/CI/native) keeps the
+transport on, so a forgotten `VITE_MQTT_URL` still throws loudly instead of silently
+no-oping. **Native ignores the flag** — it selects the plugin regardless. To enable
+web telemetry later, expose a WSS listener, set the flag true and `VITE_MQTT_URL` to
+a real URL: an env change, not a code change.
+
+### <a id="pwa-installable-web-build"></a>PWA (installable web build)
+
+The web build ships a manifest + service worker, so it can be installed to a phone's
+home screen and tested on real devices over HTTPS with no app-store involvement (see
+[`deploy/VPS_HTTPS_TESTING.md`](./deploy/VPS_HTTPS_TESTING.md)).
+
+**It is a testing/demo vehicle for the warm path, not a production target.** A PWA
+gets no background GPS — fixes stop when the screen locks — and no reachable broker
+(above). Real telemetry is the native build's job, permanently.
+
+Three constraints worth knowing before touching `vite.config.ts`:
+
+- **`navigateFallbackDenylist: [/^\/api/]`** — the app is deliberately same-origin
+  (`VITE_API_BASE_URL=/api`), so without this Workbox's navigation fallback answers
+  API paths with `index.html`. There is no `runtimeCaching` for `/api` either, by
+  omission and on purpose: these are live run-lifecycle FSM reads, and showing an
+  operator a stale run state is worse than showing an error.
+- **`registerType: 'prompt'`, not `'autoUpdate'`** — autoUpdate reloads the page when
+  a new SW activates. The active run lives only in the Pinia run store (resume-on-boot
+  is still open work), so that would silently drop a run mid-trip. Updates wait and
+  land on the next cold start.
+- **Registration is web-only** (`src/services/pwa.ts`, `injectRegister: null`) —
+  `capacitor.config.ts` uses `webDir: 'dist'`, so this same build is packaged into the
+  Capacitor webview, where a SW hijacks local app assets and strands the native app on
+  a precache a store update cannot dislodge.
+
+Icons in `public/pwa/` derive from the "b" mark's cyan (`#00c0f3`), not the wordmark
+green (`#6dc067`) — the two brand assets disagree and the mark owns the install
+identity. The maskable variant is knocked out (solid field, white "b", no ring)
+because the source mark is full-bleed and Android crops to the inner ~80%.
 
 ### Persistence
 
@@ -326,12 +380,14 @@ app/
       apiClient.ts    # typed fetch wrapper (Token auth, error envelopes)
       schedule.ts     # GTFS/run REST lookups
       geolocation.ts  # GPS watcher (Capacitor native / browser fallback)
+      pwa.ts          # service-worker registration (web only; no-op on native)
       telemetry/      # TelemetryRuntime seam + web & native implementations
     theme/            # variables.css + palettes.ts + applyPalette.ts (theming)
     types/            # api.ts (wire types), domain.ts (app types)
     router/           # routes + auth guard
   public/
     logo/             # Databús wordmark (dark/light) + "b" mark; favicon
+    pwa/              # generated PWA icons (192, 512, maskable 512, apple 180)
   plugins/
     capacitor-databus-telemetry/   # native TCP+TLS MQTT plugin (Kotlin + Swift)
   tests/

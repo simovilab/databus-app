@@ -1,6 +1,8 @@
 <template>
   <div class="app-error">
-    <ion-icon aria-hidden="true" :icon="alertCircleOutline" color="danger" />
+    <span class="app-error__badge" aria-hidden="true">
+      <ion-icon :icon="alertCircleOutline" color="danger" />
+    </span>
     <p class="app-error__message">{{ friendlyMessage }}</p>
     <ion-button v-if="retryLabel" size="small" fill="outline" @click="emit('retry')">
       {{ retryLabel }}
@@ -53,12 +55,23 @@ const friendlyMessage = computed(() => {
   width: 100%;
 }
 
-.app-error ion-icon {
-  font-size: 2rem;
+.app-error__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--app-tint-danger, rgba(235, 68, 90, 0.12));
+}
+
+.app-error__badge ion-icon {
+  font-size: 1.75rem;
 }
 
 .app-error__message {
   color: var(--ion-color-danger);
   margin: 0;
+  line-height: var(--app-line-height-relaxed, 1.55);
 }
 </style>

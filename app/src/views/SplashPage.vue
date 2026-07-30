@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-content :fullscreen="true" class="splash-content">
-      <div class="splash-brand">
+      <div class="splash-brand splash-brand--enter">
         <BrandLogo variant="light" height="64px" class="splash-brand__logo" />
         <p class="splash-brand__tagline">App</p>
         <AppLoading message="Iniciando…" />
@@ -59,5 +59,19 @@ onMounted(() => {
   font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.15em;
+}
+
+.splash-brand--enter {
+  animation: splash-enter var(--app-motion-base, 240ms) var(--app-motion-ease, ease-out);
+}
+@keyframes splash-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>

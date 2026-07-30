@@ -1,8 +1,10 @@
 <template>
-  <div class="app-loading">
-    <ion-spinner name="crescent" color="primary" />
-    <p v-if="message" class="app-loading__message">{{ message }}</p>
-  </div>
+  <Transition appear name="app-loading-fade">
+    <div class="app-loading">
+      <ion-spinner name="crescent" color="primary" />
+      <p v-if="message" class="app-loading__message">{{ message }}</p>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -34,5 +36,15 @@ withDefaults(
   color: var(--ion-color-medium);
   font-size: 0.9rem;
   margin: 0;
+}
+
+/* Small fade-in so the spinner doesn't just pop in — purely decorative,
+   nothing waits on it (see the global prefers-reduced-motion override in
+   theme/variables.css, which collapses this to instant). */
+.app-loading-fade-enter-active {
+  transition: opacity var(--app-motion-fast, 150ms) var(--app-motion-ease, ease-out);
+}
+.app-loading-fade-enter-from {
+  opacity: 0;
 }
 </style>

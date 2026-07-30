@@ -26,7 +26,7 @@
         <empty-state
           v-else
           title="Sin run activo"
-          message="Inicia un run programado para comenzar a transmitir telemetría."
+          message="Cuando estés listo, inicia un run programado y empezamos a transmitir telemetría."
         >
           <template #action>
             <ion-button
@@ -39,6 +39,9 @@
 
       <!-- Segment: history -->
       <template v-else>
+        <ion-refresher slot="fixed" data-testid="history-refresher" @ion-refresh="onRefreshHistory">
+          <ion-refresher-content />
+        </ion-refresher>
         <run-history-list
           :entries="historyStore.entries"
           @select="openDetails"
@@ -71,12 +74,15 @@ import {
   IonHeader,
   IonLabel,
   IonPage,
+  IonRefresher,
+  IonRefresherContent,
   IonSegment,
   IonSegmentButton,
   IonTitle,
   IonToolbar,
   onIonViewWillEnter,
 } from '@ionic/vue';
+import type { RefresherCustomEvent } from '@ionic/vue';
 import { computed, ref, watch } from 'vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import RunProgress from '@/components/trips/RunProgress.vue';
@@ -105,6 +111,14 @@ function onStartNew(): void {
 function openDetails(entry: RunHistoryEntry): void {
   selectedEntry.value = entry;
   detailsOpen.value = true;
+}
+
+/** Pull-to-refresh on the Historial segment — same reconcile() the tab
+ * already runs on entry, just operator-triggered. reconcile() swallows its
+ * own errors, so the refresher always completes. */
+async function onRefreshHistory(event: RefresherCustomEvent): Promise<void> {
+  await historyStore.reconcile();
+  event.target.complete();
 }
 
 // Prune stale entries (runs no longer in the DB) and refresh final states.

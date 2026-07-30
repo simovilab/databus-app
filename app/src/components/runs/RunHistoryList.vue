@@ -2,16 +2,18 @@
   <div>
     <empty-state
       v-if="entries.length === 0"
-      title="Sin runs registrados"
+      title="Aún no hay runs por aquí"
       :message="emptyMessage"
       :icon="timeOutline"
+      accent="medium"
     />
-    <ion-list v-else lines="full">
+    <ion-list v-else lines="none" class="history-list">
       <ion-item
         v-for="entry in visibleEntries"
         :key="entry.runId"
         button
         detail
+        class="history-row"
         data-testid="run-history-row"
         @click="emit('select', entry)"
       >
@@ -44,7 +46,7 @@ const props = withDefaults(
   }>(),
   {
     max: undefined,
-    emptyMessage: 'Los runs finalizados aparecerán aquí.',
+    emptyMessage: 'En cuanto termines tu primer run, aparecerá justo aquí.',
   },
 );
 
@@ -66,3 +68,27 @@ function stateColor(state: RunState): 'success' | 'warning' | 'danger' | 'medium
   return 'medium';
 }
 </script>
+
+<style scoped>
+/* Card Stack: each history entry reads as its own soft row-card rather than a
+   plain list line. `native` is the CSS Shadow Part ion-item exposes for
+   exactly this kind of external restyling. */
+.history-list {
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-spacing-sm, 8px);
+}
+
+.history-row::part(native) {
+  border-radius: var(--app-radius-lg, 16px);
+  background: var(--ion-card-background, var(--ion-item-background));
+  box-shadow: var(--app-shadow-sm);
+  margin-bottom: 0;
+}
+
+.history-row {
+  --padding-start: var(--app-spacing-md, 16px);
+  --inner-padding-end: var(--app-spacing-md, 16px);
+}
+</style>

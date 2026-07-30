@@ -1,12 +1,15 @@
 <template>
   <div class="run-progress">
     <ion-card>
-      <ion-card-header>
+      <ion-card-header class="state-header" :style="{ background: stateTint }">
         <ion-card-title class="state-title">
-          <ion-badge
-            :color="stateColor"
-            data-testid="run-state-badge"
-          >{{ run?.state ?? '—' }}</ion-badge>
+          <Transition name="state-pop" mode="out-in">
+            <ion-badge
+              :key="run?.state ?? 'none'"
+              :color="stateColor"
+              data-testid="run-state-badge"
+            >{{ run?.state ?? '—' }}</ion-badge>
+          </Transition>
         </ion-card-title>
       </ion-card-header>
       <ion-card-content>
@@ -63,6 +66,11 @@
         End run
       </ion-button>
       <div v-else class="terminal-actions">
+        <Transition name="check-pop">
+          <div v-if="showEndPulse" class="success-pulse" aria-hidden="true">
+            <ion-icon :icon="checkmarkCircle" color="success" />
+          </div>
+        </Transition>
         <p class="terminal-note" data-testid="run-terminal-note">
           This run has ended.
         </p>
@@ -97,10 +105,20 @@ import {
   IonLabel,
   IonList,
 } from '@ionic/vue';
-import { stopCircleOutline } from 'ionicons/icons';
+import { checkmarkCircle, stopCircleOutline } from 'ionicons/icons';
 import { computed, onUnmounted, ref } from 'vue';
 import { useRunStore } from '@/stores/run';
 import type { RunState } from '@/types/domain';
+
+/** True when the OS asks apps to minimize motion. Used to skip the purely
+ * decorative success-pulse delay below — never to skip anything functional. */
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -135,6 +153,12 @@ const stateColor = computed(() => {
   if (run.value.state === 'No Signal') return 'warning';
   return 'primary';
 });
+
+/** Soft pastel wash behind the state badge — differentiates state inside the
+ * card instead of a hard color block (Card Stack principle 1). */
+const stateTint = computed(() => `var(--app-tint-${stateColor.value})`);
+
+const showEndPulse = ref(false);
 
 const lastFixText = computed(() => {
   const fix = telemetry.value.lastFix.value;
@@ -236,6 +260,15 @@ async function onEndRun(): Promise<void> {
     await runStore.endRun();
     // One final refresh so the terminal state is reflected immediately.
     stopPolling();
+    // Purely decorative confirmation — the terminal state/note above are
+    // already correct the instant endRun() resolves, regardless of this.
+    showEndPulse.value = true;
+    setTimeout(
+      () => {
+        showEndPulse.value = false;
+      },
+      prefersReducedMotion() ? 0 : 900,
+    );
   } catch (err) {
     endError.value =
       err instanceof Error
@@ -261,9 +294,65 @@ onUnmounted(stopPolling);
   gap: var(--app-spacing-md, 16px);
 }
 
+.state-header {
+  border-radius: var(--app-radius-xl, 24px) var(--app-radius-xl, 24px) 0 0;
+  transition: background-color var(--app-motion-base, 240ms) var(--app-motion-ease, ease);
+}
+
 .state-title {
   display: flex;
   align-items: center;
+}
+
+/* State-change pulse: the badge is keyed on run.state, so Vue mounts a fresh
+   element whenever the lifecycle advances (Confirmed → Tracking → …) and
+   this enter animation plays once per transition. */
+.state-pop-enter-active {
+  animation: state-pop var(--app-motion-base, 240ms) var(--app-motion-ease, ease-out);
+}
+@keyframes state-pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.success-pulse {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--app-spacing-xs, 4px);
+}
+
+.success-pulse ion-icon {
+  font-size: 2rem;
+}
+
+.check-pop-enter-active {
+  animation: check-pop var(--app-motion-base, 240ms) var(--app-motion-ease, ease-out);
+}
+.check-pop-leave-active {
+  transition: opacity var(--app-motion-fast, 150ms) ease-in;
+}
+.check-pop-leave-to {
+  opacity: 0;
+}
+@keyframes check-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .detail-label {

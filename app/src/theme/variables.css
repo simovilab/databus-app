@@ -92,6 +92,98 @@
   --app-radius-sm: 4px;
   --app-radius-md: 8px;
   --app-radius-lg: 16px;
+
+  /** ---- "Card Stack" frontend variant tokens ----
+   * Soft, rounded, consumer-grade surfaces (Uber Driver / DoorDash Dasher
+   * feel). See plans/alt-frontends/plan-c-cardstack.md. Everything below is
+   * additive — nothing above this block changes meaning. */
+  --app-radius-xl: 24px; /* cards, bottom-sheet modal tops */
+  --app-radius-btn: 12px; /* buttons, inputs */
+
+  /* Two-layer "soft elevation" shadows — a close, faint layer plus a wider,
+     softer one reads as a gentle lift rather than a hard drop shadow. */
+  --app-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --app-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
+  --app-shadow-md:
+    0 1px 3px rgba(0, 0, 0, 0.06), 0 8px 20px -8px rgba(0, 0, 0, 0.14);
+  --app-shadow-lg:
+    0 4px 10px rgba(0, 0, 0, 0.08), 0 16px 32px -12px rgba(0, 0, 0, 0.2);
+
+  /* Motion: small, tasteful, always under ~300ms (see the global
+     prefers-reduced-motion override below, which neutralizes all of it). */
+  --app-motion-fast: 150ms;
+  --app-motion-base: 240ms;
+  --app-motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  --app-line-height-relaxed: 1.55;
+
+  /* Soft pastel tints for differentiating state *inside* cards (a status
+     header wash, an empty-state icon backdrop, …) instead of hard color
+     blocks. Derived from the existing stepped colors so they follow whatever
+     palette the operator picked in Ajustes — see theme/palettes.ts. */
+  --app-tint-primary: rgba(var(--ion-color-primary-rgb), 0.12);
+  --app-tint-tertiary: rgba(var(--ion-color-tertiary-rgb), 0.12);
+  --app-tint-success: rgba(var(--ion-color-success-rgb), 0.14);
+  --app-tint-warning: rgba(var(--ion-color-warning-rgb), 0.16);
+  --app-tint-danger: rgba(var(--ion-color-danger-rgb), 0.12);
+  --app-tint-medium: rgba(var(--ion-color-medium-rgb), 0.1);
+}
+
+/* ---- Card Stack: soft, elevated surfaces everywhere ----
+ * ion-card bakes its own border-radius/box-shadow onto its shadow-DOM host
+ * (Ionic ships no CSS Shadow Part for the card box itself), so a global,
+ * unscoped override needs !important to outrank that internal rule — the
+ * standard way to reshape a shadow-DOM component from outside its own
+ * stylesheet. This is the one global !important in this file, deliberately
+ * narrow (two properties, one selector). */
+ion-card {
+  border-radius: var(--app-radius-xl) !important;
+  box-shadow: var(--app-shadow-md) !important;
+}
+
+/* Friendlier default corners on buttons/inputs (ion-button/ion-input DO
+   expose --border-radius as a supported CSS variable, so no !important is
+   needed here). */
+ion-button {
+  --border-radius: var(--app-radius-btn);
+}
+
+/* Slightly more generous line-height for body copy (principle 6). */
+p {
+  line-height: var(--app-line-height-relaxed);
+}
+
+/* ---- Bottom-sheet modal chrome ----
+ * Shared look for TripSetupModal / RunDetailsModal / ProfileEditModal, which
+ * all use IonModal's `breakpoints`/`initialBreakpoint` (a swipeable sheet)
+ * instead of a full-screen modal. `content`/`handle` are CSS Shadow Parts
+ * ion-modal exposes specifically for this kind of external restyling — see
+ * https://ionicframework.com/docs/api/modal#customizing-a-sheet-modal */
+.sheet-modal::part(content) {
+  border-radius: var(--app-radius-xl) var(--app-radius-xl) 0 0;
+  box-shadow: var(--app-shadow-lg);
+}
+.sheet-modal::part(handle) {
+  width: 42px;
+  height: 5px;
+  background: var(--ion-color-medium);
+  opacity: 0.35;
+}
+
+/* ---- Respect the operator's motion preference, everywhere, automatically ----
+ * Every transition/animation added for Card Stack collapses to effectively
+ * instant when the OS asks for reduced motion. Nothing in the app depends on
+ * an animation finishing to be functionally correct (runs still start/end
+ * immediately either way) — this only ever removes movement, never behavior. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /*
@@ -135,5 +227,14 @@
     --ion-toolbar-background: #1a1c1a;
     --ion-tab-bar-background: #1a1c1a;
     --ion-card-background: #1a1c1a;
+
+    /* Same soft tints, a bit stronger so they still read against a dark
+       surface (see the --app-tint-* definitions above). */
+    --app-tint-primary: rgba(var(--ion-color-primary-rgb), 0.22);
+    --app-tint-tertiary: rgba(var(--ion-color-tertiary-rgb), 0.22);
+    --app-tint-success: rgba(var(--ion-color-success-rgb), 0.24);
+    --app-tint-warning: rgba(var(--ion-color-warning-rgb), 0.26);
+    --app-tint-danger: rgba(var(--ion-color-danger-rgb), 0.22);
+    --app-tint-medium: rgba(var(--ion-color-medium-rgb), 0.18);
   }
 }

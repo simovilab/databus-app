@@ -1,6 +1,9 @@
 <template>
   <ion-modal
+    class="sheet-modal"
     :is-open="isOpen"
+    :breakpoints="[0, 0.5, 0.92]"
+    :initial-breakpoint="0.92"
     role="dialog"
     aria-label="Run details"
     @did-dismiss="onDismiss"

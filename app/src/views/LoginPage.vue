@@ -1,13 +1,13 @@
 <template>
   <ion-page>
     <ion-content :fullscreen="true" class="login-content">
-      <div class="login-shell">
+      <div class="login-shell login-shell--enter">
         <header class="login-brand">
           <BrandLogo variant="light" height="56px" class="login-brand__logo" />
           <p class="login-brand__tagline">App</p>
         </header>
 
-        <form class="login-form" novalidate @submit.prevent="submit">
+        <form class="login-form login-form--card" novalidate @submit.prevent="submit">
           <ion-input
             class="login-field"
             :class="{
@@ -185,9 +185,19 @@ async function submit(): Promise<void> {
   gap: var(--app-spacing-md, 16px);
 }
 
+/* Card Stack: the sign-in form floats as its own soft, rounded surface on
+   the brand-dark background, rather than bare fields on flat color. */
+.login-form--card {
+  padding: var(--app-spacing-lg, 24px);
+  border-radius: var(--app-radius-xl, 24px);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: var(--app-shadow-md);
+}
+
 .login-field {
   --color: var(--ion-color-light);
   --placeholder-color: var(--ion-color-medium-tint, #797e7b);
+  --border-radius: var(--app-radius-btn, 12px);
 }
 
 .login-form__error {
@@ -207,5 +217,20 @@ async function submit(): Promise<void> {
   font-size: 0.85rem;
   cursor: not-allowed;
   text-align: center;
+}
+
+/* Gentle entrance — the shell fades/slides in on mount. */
+.login-shell--enter {
+  animation: login-enter var(--app-motion-base, 240ms) var(--app-motion-ease, ease-out);
+}
+@keyframes login-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

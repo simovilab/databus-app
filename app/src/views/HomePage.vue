@@ -5,57 +5,71 @@
         <ion-title>Inicio</ion-title>
       </ion-toolbar>
     </ion-header>
-    <ion-content class="ion-padding">
-      <section class="home-greeting">
-        <BrandLogo variant="auto" height="34px" class="home-greeting__logo" />
-        <h1 class="home-greeting__heading">Hola, {{ firstName }}</h1>
-        <p class="home-greeting__sub">¿Qué harás hoy?</p>
-      </section>
+    <ion-content class="ion-padding home-feed">
+      <ion-card class="home-card home-card--greeting">
+        <ion-card-content class="home-greeting">
+          <BrandLogo variant="auto" height="34px" class="home-greeting__logo" />
+          <h1 class="home-greeting__heading">Hola, {{ firstName }}</h1>
+          <p class="home-greeting__sub">¿Qué harás hoy?</p>
+        </ion-card-content>
+      </ion-card>
 
-      <section v-if="activeRun" class="home-run">
-        <ion-card button detail="false" @click="goToRuns">
-          <ion-card-header>
+      <Transition name="cardfade" mode="out-in">
+        <ion-card
+          v-if="activeRun"
+          key="active"
+          button
+          detail="false"
+          class="home-card"
+        >
+          <ion-card-header class="home-run__header" @click="goToRuns">
             <ion-card-title>Run en curso</ion-card-title>
             <ion-card-subtitle>{{ activeRun.routeId }} · {{ activeRun.tripId }}</ion-card-subtitle>
           </ion-card-header>
-          <ion-card-content>
-            <ion-chip :color="stateColor" outline>
-              <ion-icon :icon="radioButtonOn" />
-              <ion-label>{{ activeRun.state }}</ion-label>
-            </ion-chip>
+          <ion-card-content @click="goToRuns">
+            <Transition name="state-pop" mode="out-in">
+              <ion-chip :key="activeRun.state" :color="stateColor" outline>
+                <ion-icon :icon="radioButtonOn" />
+                <ion-label>{{ activeRun.state }}</ion-label>
+              </ion-chip>
+            </Transition>
             <p class="home-run__hint">Toca para ver el progreso del run.</p>
           </ion-card-content>
         </ion-card>
-      </section>
 
-      <section v-else class="home-empty">
-        <EmptyState
-          title="Sin run activo"
-          message="Inicia un run desde la pestaña Runs para comenzar a transmitir tu posición."
-          :icon="busOutline"
-        >
-          <template #action>
-            <ion-button @click="goToRuns" fill="outline">Iniciar un run</ion-button>
-          </template>
-        </EmptyState>
-      </section>
+        <ion-card v-else key="empty" class="home-card home-card--empty">
+          <ion-card-content>
+            <EmptyState
+              title="Sin run activo"
+              message="Cuando quieras, inicia un run desde la pestaña Runs y empezamos a transmitir tu posición."
+              :icon="busOutline"
+            >
+              <template #action>
+                <ion-button @click="goToRuns" fill="outline">Iniciar un run</ion-button>
+              </template>
+            </EmptyState>
+          </ion-card-content>
+        </ion-card>
+      </Transition>
 
-      <section v-if="recentRuns.length" class="home-recent">
-        <div class="home-recent__header">
-          <h2 class="home-recent__title">Actividad reciente</h2>
-          <ion-button
-            fill="clear"
-            size="small"
-            data-testid="home-see-more"
-            @click="goToRuns"
-          >Ver más</ion-button>
-        </div>
-        <run-history-list
-          :entries="recentRuns"
-          :max="3"
-          @select="goToRuns"
-        />
-      </section>
+      <ion-card v-if="recentRuns.length" class="home-card home-card--recent">
+        <ion-card-content>
+          <div class="home-recent__header">
+            <h2 class="home-recent__title">Actividad reciente</h2>
+            <ion-button
+              fill="clear"
+              size="small"
+              data-testid="home-see-more"
+              @click="goToRuns"
+            >Ver más</ion-button>
+          </div>
+          <run-history-list
+            :entries="recentRuns"
+            :max="3"
+            @select="goToRuns"
+          />
+        </ion-card-content>
+      </ion-card>
     </ion-content>
   </ion-page>
 </template>
@@ -117,8 +131,28 @@ function goToRuns(): void {
 </script>
 
 <style scoped>
+/* Card Stack principle 2: Home reads as a scrollable feed of cards — greeting
+   → active-run/empty → recent activity — each its own rounded surface with
+   breathing room between, rather than a fixed dashboard. */
+.home-feed {
+  --padding-top: var(--app-spacing-md, 16px);
+  --padding-bottom: var(--app-spacing-xl, 32px);
+}
+
+.home-card {
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+  margin-bottom: var(--app-spacing-lg, 24px);
+}
+
+.home-card--greeting {
+  background: var(--app-tint-primary);
+}
+
 .home-greeting {
-  margin: var(--app-spacing-md, 16px) 0 var(--app-spacing-lg, 24px);
+  display: flex;
+  flex-direction: column;
 }
 
 .home-greeting__logo {
@@ -136,22 +170,14 @@ function goToRuns(): void {
   color: var(--ion-color-medium);
 }
 
-.home-run {
-  margin-top: var(--app-spacing-sm, 8px);
+.home-run__header {
+  cursor: pointer;
 }
 
 .home-run__hint {
   margin: var(--app-spacing-sm, 8px) 0 0;
   color: var(--ion-color-medium);
   font-size: 0.85rem;
-}
-
-.home-empty {
-  margin-top: var(--app-spacing-xl, 32px);
-}
-
-.home-recent {
-  margin-top: var(--app-spacing-xl, 32px);
 }
 
 .home-recent__header {
@@ -164,5 +190,36 @@ function goToRuns(): void {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+/* Gentle crossfade between the active-run card and the empty-state card. */
+.cardfade-enter-active,
+.cardfade-leave-active {
+  transition:
+    opacity var(--app-motion-base, 240ms) var(--app-motion-ease, ease),
+    transform var(--app-motion-base, 240ms) var(--app-motion-ease, ease);
+}
+.cardfade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.cardfade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* State-change pulse for the active-run chip (keyed on the run's state). */
+.state-pop-enter-active {
+  animation: state-pop var(--app-motion-base, 240ms) var(--app-motion-ease, ease-out);
+}
+@keyframes state-pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>

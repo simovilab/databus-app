@@ -7,9 +7,10 @@
     </ion-header>
     <ion-content class="ion-padding">
       <EmptyState
-        title="Sin mensajes"
-        message="La mensajería operativa (chat, anuncios y alertas de servicio) llegará en una próxima versión."
+        title="Todo tranquilo por aquí"
+        message="Muy pronto verás aquí tus anuncios, alertas de servicio y chat con la central."
         :icon="chatbubblesOutline"
+        accent="tertiary"
       />
     </ion-content>
   </ion-page>

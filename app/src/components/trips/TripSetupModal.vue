@@ -1,7 +1,10 @@
 <template>
   <ion-modal
+    class="sheet-modal"
     :is-open="isOpen"
     :backdrop-dismiss="false"
+    :breakpoints="[0.4, 0.7, 0.94]"
+    :initial-breakpoint="0.94"
     role="dialog"
     aria-label="Start a run"
     @did-dismiss="onDismiss"
@@ -19,13 +22,20 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding modal-body">
+      <Transition name="check-pop">
+        <div v-if="justConfirmed" class="confirm-pulse" aria-hidden="true">
+          <ion-icon :icon="checkmarkCircle" color="success" />
+          <p>Run started</p>
+        </div>
+      </Transition>
+
       <app-loading
-        v-if="loading"
+        v-if="!justConfirmed && loading"
         :message="loadingMessage"
       />
       <app-error
-        v-else-if="error"
+        v-else-if="!justConfirmed && error"
         :error="error"
         fallback-message="Could not load schedule data. Please try again."
         retry-label="Retry"
@@ -33,7 +43,7 @@
       />
 
       <!-- Step: route -->
-      <section v-else-if="step === 'route'">
+      <section v-else-if="!justConfirmed && step === 'route'">
         <h2 class="step-title">Select a route</h2>
         <p v-if="routes.length === 0" class="step-empty">No routes available for today's feed.</p>
         <ion-list v-else>
@@ -92,7 +102,7 @@
       </section>
 
       <!-- Step: vehicle -->
-      <section v-else-if="step === 'vehicle'">
+      <section v-else-if="!justConfirmed && step === 'vehicle'">
         <h2 class="step-title">Select a vehicle</h2>
         <ion-toggle
           v-model="manualVehicle"
@@ -182,6 +192,7 @@ import {
   IonContent,
   IonFooter,
   IonHeader,
+  IonIcon,
   IonInput,
   IonItem,
   IonLabel,
@@ -193,6 +204,7 @@ import {
   IonToggle,
   IonToolbar,
 } from '@ionic/vue';
+import { checkmarkCircle } from 'ionicons/icons';
 import { computed, ref, watch } from 'vue';
 import AppError from '@/components/ui/AppError.vue';
 import AppLoading from '@/components/ui/AppLoading.vue';
@@ -201,6 +213,18 @@ import { useRunStore } from '@/stores/run';
 import { getRoutes, getTrips, getVehicles } from '@/services/schedule';
 import { ApiError } from '@/services/apiClient';
 import type { CreateRunInput, Route, Trip, Vehicle } from '@/types/api';
+
+/** True when the OS asks apps to minimize motion. Used only to skip the
+ * purely decorative "run started" pulse delay below — createRun() has
+ * already resolved by the time this is checked, so the run itself always
+ * starts regardless of this. */
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
 
 type Step = 'route' | 'trip' | 'vehicle';
 
@@ -213,6 +237,7 @@ const authStore = useAuthStore();
 const runStore = useRunStore();
 
 const step = ref<Step>('route');
+const justConfirmed = ref(false);
 const loading = ref(false);
 const loadingMessage = ref('');
 const error = ref<unknown>(null);
@@ -267,6 +292,7 @@ const canConfirm = computed(() => vehicleId.value.length > 0);
 
 function resetState(): void {
   step.value = 'route';
+  justConfirmed.value = false;
   loading.value = false;
   loadingMessage.value = '';
   error.value = null;
@@ -391,8 +417,15 @@ async function onConfirm(): Promise<void> {
       schedule_relationship: 'SCHEDULED',
     };
     // createRun posts create-run → confirm → telemetry.start (master §6.6).
+    // The run has fully started at this point — everything from here down is
+    // a purely decorative confirmation before closing the sheet.
     await runStore.createRun(input);
-    emit('dismissed');
+    justConfirmed.value = true;
+    const pulseMs = prefersReducedMotion() ? 0 : 700;
+    setTimeout(() => {
+      busy.value = false;
+      emit('dismissed');
+    }, pulseMs);
   } catch (err) {
     if (isCreateRunError(err)) {
       // Surface the backend's actual reason (e.g. "Operator 'op-demo' is
@@ -406,7 +439,6 @@ async function onConfirm(): Promise<void> {
     } else {
       error.value = new Error('Could not start the run. Please try again.');
     }
-  } finally {
     busy.value = false;
   }
 }
@@ -442,5 +474,54 @@ function extractApiErrorDetail(err: ApiError): string | undefined {
 .step-empty {
   color: var(--ion-color-medium);
   font-size: 0.9rem;
+}
+
+.modal-body {
+  position: relative;
+}
+
+.confirm-pulse {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--app-spacing-sm, 8px);
+  background: var(--ion-background-color, #fff);
+}
+
+.confirm-pulse ion-icon {
+  font-size: 3rem;
+}
+
+.confirm-pulse p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.check-pop-enter-active {
+  animation: check-pop var(--app-motion-base, 240ms) var(--app-motion-ease, ease-out);
+}
+.check-pop-leave-active {
+  transition: opacity var(--app-motion-fast, 150ms) ease-in;
+}
+.check-pop-leave-to {
+  opacity: 0;
+}
+@keyframes check-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>

@@ -19,114 +19,130 @@
     <ion-content class="ion-padding">
       <!-- Segment: profile -->
       <template v-if="segment === 'profile'">
-        <section class="profile-card">
-          <div class="profile-card__avatar">
-            <ion-icon :icon="personCircleOutline" color="primary" />
-          </div>
-          <h2 class="profile-card__name">{{ fullName }}</h2>
-          <p class="profile-card__id">Operador {{ operatorId }}</p>
-        </section>
+        <ion-card class="user-card">
+          <ion-card-content>
+            <section class="profile-card">
+              <div class="profile-card__avatar">
+                <ion-icon :icon="personCircleOutline" color="primary" />
+              </div>
+              <h2 class="profile-card__name">{{ fullName }}</h2>
+              <p class="profile-card__id">Operador {{ operatorId }}</p>
+            </section>
 
-        <ion-button
-          expand="block"
-          fill="outline"
-          data-testid="edit-profile"
-          @click="profileEditOpen = true"
-        >Editar perfil</ion-button>
+            <ion-button
+              expand="block"
+              fill="outline"
+              data-testid="edit-profile"
+              @click="profileEditOpen = true"
+            >Editar perfil</ion-button>
+          </ion-card-content>
+        </ion-card>
 
-        <section class="profile-actions">
-          <ion-button
-            expand="block"
-            color="danger"
-            fill="outline"
-            data-testid="logout"
-            :disabled="pending"
-            @click="logout"
-          >
-            <ion-spinner v-if="pending" name="crescent" slot="start" />
-            {{ pending ? 'Cerrando…' : 'Cerrar sesión' }}
-          </ion-button>
-        </section>
+        <ion-card class="user-card">
+          <ion-card-content>
+            <section class="profile-actions">
+              <ion-button
+                expand="block"
+                color="danger"
+                fill="outline"
+                data-testid="logout"
+                :disabled="pending"
+                @click="logout"
+              >
+                <ion-spinner v-if="pending" name="crescent" slot="start" />
+                {{ pending ? 'Cerrando…' : 'Cerrar sesión' }}
+              </ion-button>
+            </section>
+          </ion-card-content>
+        </ion-card>
 
         <p class="profile-version">Databús · v0</p>
       </template>
 
       <!-- Segment: settings -->
       <template v-else>
-        <ion-list lines="full">
-          <ion-item>
-            <ion-toggle
-              :checked="settings.backgroundTelemetry"
-              data-testid="setting-background"
-              @ion-change="update({ backgroundTelemetry: $event.detail.checked })"
-            >
-              <ion-label>
-                <h3>Telemetría en segundo plano</h3>
-                <p>Seguir transmitiendo con la app en segundo plano.</p>
-              </ion-label>
-            </ion-toggle>
-          </ion-item>
-          <ion-item>
-            <ion-toggle
-              :checked="settings.keepScreenOn"
-              data-testid="setting-screen"
-              @ion-change="update({ keepScreenOn: $event.detail.checked })"
-            >
-              <ion-label>
-                <h3>Mantener pantalla encendida</h3>
-                <p>Evitar que la pantalla se apague durante un run.</p>
-              </ion-label>
-            </ion-toggle>
-          </ion-item>
-          <ion-item>
-            <ion-select
-              :value="settings.language"
-              label="Idioma"
-              interface="popover"
-              data-testid="setting-language"
-              @ion-change="update({ language: $event.detail.value })"
-            >
-              <ion-select-option value="es">Español</ion-select-option>
-              <ion-select-option value="en">English</ion-select-option>
-            </ion-select>
-          </ion-item>
-        </ion-list>
+        <ion-card class="user-card">
+          <ion-card-content>
+            <ion-list lines="full" class="settings-list">
+              <ion-item>
+                <ion-toggle
+                  :checked="settings.backgroundTelemetry"
+                  data-testid="setting-background"
+                  @ion-change="update({ backgroundTelemetry: $event.detail.checked })"
+                >
+                  <ion-label>
+                    <h3>Telemetría en segundo plano</h3>
+                    <p>Seguir transmitiendo con la app en segundo plano.</p>
+                  </ion-label>
+                </ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-toggle
+                  :checked="settings.keepScreenOn"
+                  data-testid="setting-screen"
+                  @ion-change="update({ keepScreenOn: $event.detail.checked })"
+                >
+                  <ion-label>
+                    <h3>Mantener pantalla encendida</h3>
+                    <p>Evitar que la pantalla se apague durante un run.</p>
+                  </ion-label>
+                </ion-toggle>
+              </ion-item>
+              <ion-item>
+                <ion-select
+                  :value="settings.language"
+                  label="Idioma"
+                  interface="popover"
+                  data-testid="setting-language"
+                  @ion-change="update({ language: $event.detail.value })"
+                >
+                  <ion-select-option value="es">Español</ion-select-option>
+                  <ion-select-option value="en">English</ion-select-option>
+                </ion-select>
+              </ion-item>
+            </ion-list>
+          </ion-card-content>
+        </ion-card>
 
         <h2 class="settings-section-title">Tema</h2>
-        <ion-list lines="full">
-          <ion-radio-group
-            :value="settings.paletteId"
-            data-testid="setting-palette"
-            @ion-change="update({ paletteId: $event.detail.value })"
-          >
-            <ion-item v-for="palette in palettes" :key="palette.id">
-              <ion-radio
-                :value="palette.id"
-                label-placement="end"
-                justify="start"
-                :data-testid="`palette-${palette.id}`"
+        <ion-card class="user-card">
+          <ion-card-content>
+            <ion-list lines="full" class="settings-list">
+              <ion-radio-group
+                :value="settings.paletteId"
+                data-testid="setting-palette"
+                @ion-change="update({ paletteId: $event.detail.value })"
               >
-                <div class="palette-option">
-                  <span class="palette-name">{{ palette.name }}</span>
-                  <span class="palette-swatches" aria-hidden="true">
-                    <span
-                      class="palette-swatch"
-                      :style="{ backgroundColor: palette.primary }"
-                    />
-                    <span
-                      class="palette-swatch"
-                      :style="{ backgroundColor: palette.secondary }"
-                    />
-                    <span
-                      class="palette-swatch"
-                      :style="{ backgroundColor: palette.tertiary }"
-                    />
-                  </span>
-                </div>
-              </ion-radio>
-            </ion-item>
-          </ion-radio-group>
-        </ion-list>
+                <ion-item v-for="palette in palettes" :key="palette.id">
+                  <ion-radio
+                    :value="palette.id"
+                    label-placement="end"
+                    justify="start"
+                    :data-testid="`palette-${palette.id}`"
+                  >
+                    <div class="palette-option">
+                      <span class="palette-name">{{ palette.name }}</span>
+                      <span class="palette-swatches" aria-hidden="true">
+                        <span
+                          class="palette-swatch"
+                          :style="{ backgroundColor: palette.primary }"
+                        />
+                        <span
+                          class="palette-swatch"
+                          :style="{ backgroundColor: palette.secondary }"
+                        />
+                        <span
+                          class="palette-swatch"
+                          :style="{ backgroundColor: palette.tertiary }"
+                        />
+                      </span>
+                    </div>
+                  </ion-radio>
+                </ion-item>
+              </ion-radio-group>
+            </ion-list>
+          </ion-card-content>
+        </ion-card>
       </template>
     </ion-content>
 
@@ -144,6 +160,8 @@
 //   - Ajustes: device-local app preferences (settings store).
 import {
   IonButton,
+  IonCard,
+  IonCardContent,
   IonContent,
   IonHeader,
   IonIcon,
@@ -207,13 +225,35 @@ async function logout(): Promise<void> {
 </script>
 
 <style scoped>
+.user-card {
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+  margin-bottom: var(--app-spacing-lg, 24px);
+}
+
+.settings-list {
+  --background: transparent;
+  background: transparent;
+}
+
 .profile-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--app-spacing-xs, 4px);
-  padding: var(--app-spacing-xl, 32px) 0 var(--app-spacing-lg, 24px);
+  padding: var(--app-spacing-md, 16px) 0 var(--app-spacing-lg, 24px);
   text-align: center;
+}
+
+.profile-card__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--app-tint-primary);
 }
 
 .profile-card__avatar ion-icon {

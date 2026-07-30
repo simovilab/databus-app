@@ -1,6 +1,9 @@
 <template>
   <ion-modal
+    class="sheet-modal"
     :is-open="isOpen"
+    :breakpoints="[0, 0.4]"
+    :initial-breakpoint="0.4"
     role="dialog"
     aria-label="Editar perfil"
     @did-dismiss="onCancel"

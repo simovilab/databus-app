@@ -127,20 +127,17 @@ describe('Run flow — start, advance, end', () => {
     cy.visit('/');
     cy.seedAuth();
 
-    // --- No active run: Start run CTA ---
+    // --- No active run: Start run CTA opens the single-screen setup form ---
     cy.get('[data-testid="start-run-cta"]').should('be.visible').click();
 
-    // --- Step: route ---
-    cy.wait('@routes');
+    // Routes and vehicles load together as soon as the sheet opens.
+    cy.wait(['@routes', '@vehicles']);
     cy.get('[data-testid="route-option"]').first().click();
-    cy.get('[data-testid="next-button"]').click();
 
-    // --- Step: trip (trips + vehicles loaded in parallel) ---
-    cy.wait(['@trips', '@vehicles']);
+    // Picking a route loads its trips in place — no page change.
+    cy.wait('@trips');
     cy.get('[data-testid="trip-option"]').first().click();
-    cy.get('[data-testid="next-button"]').click();
 
-    // --- Step: vehicle → confirm ---
     cy.get('[data-testid="vehicle-option"]').first().click();
     cy.get('[data-testid="confirm-run"]').click();
 

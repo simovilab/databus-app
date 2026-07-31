@@ -20,7 +20,7 @@ const SESSION: E2ESession = {
 };
 
 interface VueApp {
-  config: { globalProperties: { $pinia: { _s: Map<string, { $patch: (s: Partial<E2ESession>) => void }> }; $router: { replace: (to: string) => void } } };
+  config: { globalProperties: { $pinia: { _s: Map<string, { $patch: (s: { session: E2ESession }) => void }> }; $router: { replace: (to: string) => void } } };
 }
 
 /**
@@ -47,7 +47,7 @@ function seedAuth(): Cypress.Chainable<void> {
       if (!authStore) {
         throw new Error('auth store not registered in Pinia');
       }
-      authStore.$patch({ ...SESSION });
+      authStore.$patch({ session: { ...SESSION } });
       app.config.globalProperties.$router.replace('/tabs/runs');
     });
 }

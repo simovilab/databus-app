@@ -31,147 +31,157 @@
       </Transition>
 
       <app-loading
-        v-if="!justConfirmed && loading"
-        :message="loadingMessage"
+        v-if="!justConfirmed && initialLoading"
+        message="Loading schedule…"
       />
       <app-error
-        v-else-if="!justConfirmed && error"
-        :error="error"
+        v-else-if="!justConfirmed && initialError"
+        :error="initialError"
         fallback-message="Could not load schedule data. Please try again."
         retry-label="Retry"
-        @retry="retryCurrentStep"
+        @retry="loadInitial"
       />
 
-      <!-- Step: route -->
-      <section v-else-if="!justConfirmed && step === 'route'">
-        <h2 class="step-title">Select a route</h2>
-        <p v-if="routes.length === 0" class="step-empty">No routes available for today's feed.</p>
-        <ion-list v-else>
-          <ion-radio-group
-            v-model="selectedRouteId"
-            allow-empty-selection
-          >
-            <ion-item
-              v-for="route in routes"
-              :key="route.route_id"
-              data-testid="route-option"
+      <template v-else-if="!justConfirmed">
+        <!-- Route -->
+        <section class="setup-section">
+          <h2 class="step-title">1. Select a route</h2>
+          <p v-if="routes.length === 0" class="step-empty">No routes available for today's feed.</p>
+          <ion-list v-else>
+            <ion-radio-group
+              v-model="selectedRouteId"
+              allow-empty-selection
             >
-              <ion-radio
-                :value="route.route_id"
-                label-placement="end"
-                justify="start"
+              <ion-item
+                v-for="route in routes"
+                :key="route.route_id"
+                data-testid="route-option"
               >
-                <ion-label>
-                  <h2>{{ route.route_short_name || route.route_id }}</h2>
-                  <p>{{ route.route_long_name }}</p>
-                </ion-label>
-              </ion-radio>
-            </ion-item>
-          </ion-radio-group>
-        </ion-list>
-      </section>
+                <ion-radio
+                  :value="route.route_id"
+                  label-placement="end"
+                  justify="start"
+                >
+                  <ion-label>
+                    <h2>{{ route.route_short_name || route.route_id }}</h2>
+                    <p>{{ route.route_long_name }}</p>
+                  </ion-label>
+                </ion-radio>
+              </ion-item>
+            </ion-radio-group>
+          </ion-list>
+        </section>
 
-      <!-- Step: trip (a GTFS trip carries its own direction + shape, so there
-           is no separate direction step — see services/schedule.ts). -->
-      <section v-else-if="step === 'trip'">
-        <h2 class="step-title">Select a trip</h2>
-        <p v-if="trips.length === 0" class="step-empty">No trips scheduled for this route today.</p>
-        <ion-list v-else>
-          <ion-radio-group
-            v-model="selectedTripId"
-            allow-empty-selection
-          >
-            <ion-item
-              v-for="trip in trips"
-              :key="trip.trip_id"
-              data-testid="trip-option"
-            >
-              <ion-radio
-                :value="trip.trip_id"
-                label-placement="end"
-                justify="start"
-              >
-                <ion-label>
-                  <h2>{{ tripLabel(trip) }}</h2>
-                  <p>{{ trip.trip_headsign }}</p>
-                </ion-label>
-              </ion-radio>
-            </ion-item>
-          </ion-radio-group>
-        </ion-list>
-      </section>
-
-      <!-- Step: vehicle -->
-      <section v-else-if="!justConfirmed && step === 'vehicle'">
-        <h2 class="step-title">Select a vehicle</h2>
-        <ion-toggle
-          v-model="manualVehicle"
-          data-testid="vehicle-manual-toggle"
-        >Enter vehicle ID manually</ion-toggle>
-
-        <ion-list v-if="!manualVehicle">
-          <p v-if="vehicles.length === 0" class="step-empty">
-            No vehicles listed. Toggle manual entry to type an ID.
-          </p>
-          <ion-radio-group
-            v-model="selectedVehicleId"
-            allow-empty-selection
-          >
-            <ion-item
-              v-for="vehicle in vehicles"
-              :key="vehicle.id"
-              data-testid="vehicle-option"
-            >
-              <ion-radio
-                :value="vehicle.id"
-                label-placement="end"
-                justify="start"
-              >
-                <ion-label>
-                  <h2>{{ vehicle.id }}</h2>
-                  <p>{{ vehicle.license_plate }}</p>
-                </ion-label>
-              </ion-radio>
-            </ion-item>
-          </ion-radio-group>
-        </ion-list>
-
-        <ion-item v-if="manualVehicle">
-          <ion-input
-            v-model="manualVehicleId"
-            data-testid="vehicle-manual-input"
-            label="Vehicle ID"
-            label-placement="stacked"
-            placeholder="e.g. BUS-001"
+        <!-- Trip (a GTFS trip carries its own direction + shape, so there is
+             no separate direction picker — see services/schedule.ts). Loads
+             as soon as a route is selected, without leaving this screen. -->
+        <section class="setup-section">
+          <h2 class="step-title">2. Select a trip</h2>
+          <p v-if="!selectedRouteId" class="step-empty">Select a route first.</p>
+          <app-loading v-else-if="tripsLoading" message="Loading trips…" />
+          <app-error
+            v-else-if="tripsError"
+            :error="tripsError"
+            fallback-message="Could not load trips. Please try again."
+            retry-label="Retry"
+            @retry="loadTrips"
           />
-        </ion-item>
-      </section>
+          <template v-else>
+            <p v-if="trips.length === 0" class="step-empty">No trips scheduled for this route today.</p>
+            <ion-list v-else>
+              <ion-radio-group
+                v-model="selectedTripId"
+                allow-empty-selection
+              >
+                <ion-item
+                  v-for="trip in trips"
+                  :key="trip.trip_id"
+                  data-testid="trip-option"
+                >
+                  <ion-radio
+                    :value="trip.trip_id"
+                    label-placement="end"
+                    justify="start"
+                  >
+                    <ion-label>
+                      <h2>{{ tripLabel(trip) }}</h2>
+                      <p>{{ trip.trip_headsign }}</p>
+                    </ion-label>
+                  </ion-radio>
+                </ion-item>
+              </ion-radio-group>
+            </ion-list>
+          </template>
+        </section>
+
+        <!-- Vehicle -->
+        <section class="setup-section">
+          <h2 class="step-title">3. Select a vehicle</h2>
+          <ion-toggle
+            v-model="manualVehicle"
+            data-testid="vehicle-manual-toggle"
+          >Enter vehicle ID manually</ion-toggle>
+
+          <ion-list v-if="!manualVehicle">
+            <p v-if="vehicles.length === 0" class="step-empty">
+              No vehicles listed. Toggle manual entry to type an ID.
+            </p>
+            <ion-radio-group
+              v-model="selectedVehicleId"
+              allow-empty-selection
+            >
+              <ion-item
+                v-for="vehicle in vehicles"
+                :key="vehicle.id"
+                data-testid="vehicle-option"
+              >
+                <ion-radio
+                  :value="vehicle.id"
+                  label-placement="end"
+                  justify="start"
+                >
+                  <ion-label>
+                    <h2>{{ vehicle.id }}</h2>
+                    <p>{{ vehicle.license_plate }}</p>
+                  </ion-label>
+                </ion-radio>
+              </ion-item>
+            </ion-radio-group>
+          </ion-list>
+
+          <ion-item v-if="manualVehicle">
+            <ion-input
+              v-model="manualVehicleId"
+              data-testid="vehicle-manual-input"
+              label="Vehicle ID"
+              label-placement="stacked"
+              placeholder="e.g. BUS-001"
+            />
+          </ion-item>
+        </section>
+
+        <app-error
+          v-if="confirmError"
+          class="setup-section confirm-error"
+          data-testid="confirm-error"
+          :error="confirmError"
+          fallback-message="Could not start the run. Please try again."
+        />
+      </template>
     </ion-content>
 
     <ion-footer>
       <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-button
-            v-if="step !== 'route'"
-            data-testid="back-button"
-            :disabled="busy"
-            @click="goBack"
-          >Back</ion-button>
-        </ion-buttons>
         <ion-buttons slot="end">
           <ion-button
-            v-if="step !== 'vehicle'"
-            data-testid="next-button"
-            :disabled="!canAdvance || busy"
-            @click="goNext"
-          >Next</ion-button>
-          <ion-button
-            v-else
             data-testid="confirm-run"
             color="primary"
             :disabled="!canConfirm || busy"
             @click="onConfirm"
-          >Confirm run</ion-button>
+          >
+            <ion-spinner v-if="busy" name="crescent" slot="start" />
+            Confirm run
+          </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-footer>
@@ -179,13 +189,14 @@
 </template>
 
 <script setup lang="ts">
-// Trip setup wizard: drives the schedule lookups (services/schedule.ts) in
-// the order route → trip → vehicle, then creates + confirms the run via
-// useRunStore.createRun (master §4.2, §6.2). A GTFS trip already carries its
-// direction_id and shape_id, so picking a trip determines both — there is no
-// separate direction step (this matches how the simulator schedules runs).
-// The store owns telemetry start/stop; this modal only creates the run.
-// All schedule failures surface as ApiError and render via <AppError>.
+// Trip setup: a single screen with route, trip, and vehicle pickers all
+// visible at once (route → trip → vehicle, services/schedule.ts), rather
+// than a stepper — the operator fills everything in one pass and taps
+// "Confirm run" once. A GTFS trip already carries its direction_id and
+// shape_id, so picking a trip determines both — there is no separate
+// direction picker. The store owns telemetry start/stop; this modal only
+// creates the run. All schedule failures surface as ApiError and render
+// via <AppError>.
 import {
   IonButton,
   IonButtons,
@@ -200,6 +211,7 @@ import {
   IonModal,
   IonRadio,
   IonRadioGroup,
+  IonSpinner,
   IonTitle,
   IonToggle,
   IonToolbar,
@@ -226,8 +238,6 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-type Step = 'route' | 'trip' | 'vehicle';
-
 const props = defineProps<{ isOpen: boolean }>();
 const emit = defineEmits<{
   (e: 'dismissed'): void;
@@ -236,11 +246,12 @@ const emit = defineEmits<{
 const authStore = useAuthStore();
 const runStore = useRunStore();
 
-const step = ref<Step>('route');
 const justConfirmed = ref(false);
-const loading = ref(false);
-const loadingMessage = ref('');
-const error = ref<unknown>(null);
+const initialLoading = ref(false);
+const initialError = ref<unknown>(null);
+const tripsLoading = ref(false);
+const tripsError = ref<unknown>(null);
+const confirmError = ref<unknown>(null);
 const busy = ref(false);
 
 const routes = ref<Route[]>([]);
@@ -277,25 +288,17 @@ const vehicleId = computed(() =>
     : selectedVehicleId.value ?? '',
 );
 
-const canAdvance = computed(() => {
-  switch (step.value) {
-    case 'route':
-      return !!selectedRouteId.value;
-    case 'trip':
-      return !!selectedTripId.value;
-    default:
-      return false;
-  }
-});
-
-const canConfirm = computed(() => vehicleId.value.length > 0);
+const canConfirm = computed(
+  () => !!selectedRouteId.value && !!selectedTripId.value && vehicleId.value.length > 0,
+);
 
 function resetState(): void {
-  step.value = 'route';
   justConfirmed.value = false;
-  loading.value = false;
-  loadingMessage.value = '';
-  error.value = null;
+  initialLoading.value = false;
+  initialError.value = null;
+  tripsLoading.value = false;
+  tripsError.value = null;
+  confirmError.value = null;
   busy.value = false;
   routes.value = [];
   trips.value = [];
@@ -307,71 +310,58 @@ function resetState(): void {
   manualVehicleId.value = '';
 }
 
-/** Clear transient error/loading when navigating between steps. */
-function clearTransient(): void {
-  error.value = null;
-  loading.value = false;
-}
-
-/** Load routes on modal open. */
+/** Load routes + vehicles on modal open. */
 watch(
   () => props.isOpen,
   async (open) => {
     if (!open) return;
     resetState();
-    await loadStep('route');
+    await loadInitial();
   },
   { immediate: false },
 );
 
-async function loadStep(target: Step): Promise<void> {
-  clearTransient();
+async function loadInitial(): Promise<void> {
+  initialError.value = null;
+  initialLoading.value = true;
   try {
-    if (target === 'route') {
-      loadingMessage.value = 'Loading routes…';
-      loading.value = true;
-      routes.value = await getRoutes();
-    } else if (target === 'trip') {
-      if (!selectedRouteId.value) return;
-      loadingMessage.value = 'Loading trips…';
-      loading.value = true;
-      // A trip already carries its direction + shape, so route → trip is the
-      // whole selection. Load vehicles alongside so the next step is instant.
-      const [routeTrips, routeVehicles] = await Promise.all([
-        getTrips(selectedRouteId.value),
-        getVehicles().catch(() => [] as Vehicle[]),
-      ]);
-      // Sort by the departure time embedded in the trip label for readability.
-      trips.value = routeTrips
-        .slice()
-        .sort((a, b) => tripLabel(a).localeCompare(tripLabel(b)));
-      vehicles.value = routeVehicles;
-    }
-    step.value = target;
+    const [loadedRoutes, loadedVehicles] = await Promise.all([
+      getRoutes(),
+      getVehicles(),
+    ]);
+    routes.value = loadedRoutes;
+    vehicles.value = loadedVehicles;
   } catch (err) {
-    error.value = err;
+    initialError.value = err;
   } finally {
-    loading.value = false;
-    loadingMessage.value = '';
+    initialLoading.value = false;
   }
 }
 
-function goNext(): void {
-  const order: Step[] = ['route', 'trip', 'vehicle'];
-  const idx = order.indexOf(step.value);
-  const next = order[idx + 1];
-  if (next) void loadStep(next);
-}
+/** Load trips for the selected route as soon as it's picked — the operator
+ * never leaves this screen, so this just fills in section 2 in place. */
+watch(selectedRouteId, (routeId) => {
+  selectedTripId.value = null;
+  trips.value = [];
+  if (routeId) void loadTrips(routeId);
+});
 
-function goBack(): void {
-  const order: Step[] = ['route', 'trip', 'vehicle'];
-  const idx = order.indexOf(step.value);
-  clearTransient();
-  if (idx > 0) step.value = order[idx - 1];
-}
-
-function retryCurrentStep(): void {
-  void loadStep(step.value);
+async function loadTrips(routeIdOverride?: string): Promise<void> {
+  const routeId = routeIdOverride ?? selectedRouteId.value;
+  if (!routeId) return;
+  tripsError.value = null;
+  tripsLoading.value = true;
+  try {
+    const routeTrips = await getTrips(routeId);
+    // Sort by the departure time embedded in the trip label for readability.
+    trips.value = routeTrips
+      .slice()
+      .sort((a, b) => tripLabel(a).localeCompare(tripLabel(b)));
+  } catch (err) {
+    tripsError.value = err;
+  } finally {
+    tripsLoading.value = false;
+  }
 }
 
 function onCancel(): void {
@@ -390,19 +380,19 @@ function isCreateRunError(err: unknown): err is ApiError {
 async function onConfirm(): Promise<void> {
   const operatorId = authStore.session?.operatorId;
   if (!operatorId) {
-    error.value = new Error('No operator session. Please log in again.');
+    confirmError.value = new Error('No operator session. Please log in again.');
     return;
   }
   if (!selectedRoute.value || !selectedTrip.value) {
-    error.value = new Error('Missing run details. Please restart selection.');
+    confirmError.value = new Error('Missing run details. Please restart selection.');
     return;
   }
   if (!vehicleId.value) {
-    error.value = new Error('A vehicle is required to start a run.');
+    confirmError.value = new Error('A vehicle is required to start a run.');
     return;
   }
 
-  clearTransient();
+  confirmError.value = null;
   busy.value = true;
   try {
     // direction_id and shape_id come from the selected trip — the trip is the
@@ -431,13 +421,13 @@ async function onConfirm(): Promise<void> {
       // Surface the backend's actual reason (e.g. "Operator 'op-demo' is
       // already assigned to run …") instead of the opaque validation step.
       const detail = extractApiErrorDetail(err);
-      error.value = new Error(
+      confirmError.value = new Error(
         detail ?? `Could not start the run (step "${err.step ?? 'unknown'}").`,
       );
     } else if (err instanceof Error) {
-      error.value = err;
+      confirmError.value = err;
     } else {
-      error.value = new Error('Could not start the run. Please try again.');
+      confirmError.value = new Error('Could not start the run. Please try again.');
     }
     busy.value = false;
   }
@@ -465,6 +455,14 @@ function extractApiErrorDetail(err: ApiError): string | undefined {
 </script>
 
 <style scoped>
+.setup-section {
+  margin-bottom: var(--app-spacing-lg, 24px);
+}
+
+.setup-section:last-child {
+  margin-bottom: 0;
+}
+
 .step-title {
   margin: 0 0 var(--app-spacing-sm, 8px);
   font-size: 1.05rem;
@@ -474,6 +472,10 @@ function extractApiErrorDetail(err: ApiError): string | undefined {
 .step-empty {
   color: var(--ion-color-medium);
   font-size: 0.9rem;
+}
+
+.confirm-error {
+  margin-top: 0;
 }
 
 .modal-body {

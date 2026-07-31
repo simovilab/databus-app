@@ -1,10 +1,27 @@
 <template>
+  <!-- A single breakpoint of 1 — the sheet is always full height and never
+       drag-resizable. This is load-bearing, not cosmetic. A sheet modal's
+       .modal-wrapper is always ~full viewport height (`--height: calc(100% -
+       …)`, `position:absolute; bottom:0`), and Ionic presents a breakpoint by
+       translating that wrapper down `(1 - breakpoint) * 100%` (@ionic/core
+       modal/gestures/sheet.js). So at any breakpoint below 1, that fraction of
+       the wrapper — ion-footer and its button included — sits permanently below
+       the viewport, and scrolling can't reach it (Ionic only re-enables
+       ion-content scrolling at the *max* breakpoint, sheet.js:188). The old max
+       of 0.94 pushed ~6% of the viewport (~69px, taller than a 56px toolbar)
+       off-screen, which is why "Initialize run" was invisible once the
+       three-section form filled the sheet.
+       Keeping 0 out of the array also means dragging can't dismiss the sheet
+       (modal.js:786 gates drag-dismiss on `breakpoints[0] === 0`), which is
+       what `backdrop-dismiss="false"` already intends: a driver mid-setup
+       should only leave via Cancel. -->
   <ion-modal
     class="sheet-modal"
     :is-open="isOpen"
     :backdrop-dismiss="false"
-    :breakpoints="[0.4, 0.7, 0.94]"
-    :initial-breakpoint="0.94"
+    :breakpoints="[1]"
+    :initial-breakpoint="1"
+    :handle="false"
     role="dialog"
     aria-label="Start a run"
     @did-dismiss="onDismiss"

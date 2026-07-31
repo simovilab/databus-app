@@ -1,9 +1,14 @@
 <template>
+  <!-- Max breakpoint must be 1: Ionic only enables ion-content scrolling at the
+       max breakpoint, and presents a breakpoint by translating the (always
+       ~full-height) wrapper down by (1 - breakpoint) — so a max of 0.92 left
+       the last ~8% of the detail list permanently below the viewport. Same
+       defect that hid TripSetupModal's footer button. -->
   <ion-modal
     class="sheet-modal"
     :is-open="isOpen"
-    :breakpoints="[0, 0.5, 0.92]"
-    :initial-breakpoint="0.92"
+    :breakpoints="[0, 0.5, 1]"
+    :initial-breakpoint="1"
     role="dialog"
     aria-label="Run details"
     @did-dismiss="onDismiss"

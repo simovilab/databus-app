@@ -4,6 +4,16 @@
 // before that), stop() is called from endRun() on any terminal outcome.
 // This is deliberate: the driver may background the app or lock the phone,
 // so telemetry must not be tied to RunProgress being mounted.
+//
+// createRun() posts create-run and confirm back-to-back, deliberately with no
+// operator-facing gap in between: the backend has no cancel_run transition
+// from Initialized (only from Confirmed/Tracking — verified against
+// ../databus/backend/runs/domain/lifecycle/transitions.py and reproduced live:
+// a create-run left Initialized permanently sticks its operator/vehicle/trip
+// bindings, deploy/DATABUS_INTEGRATION.md B4). Any operator-facing "review
+// before you commit" step must therefore happen before createRun() is called
+// at all (i.e. client-side only), never in the gap between create and
+// confirm.
 
 import { markRaw, ref } from 'vue';
 import { defineStore } from 'pinia';
@@ -66,7 +76,9 @@ export const useRunStore = defineStore('run', () => {
   /**
    * POST /create-run/ → POST /runs/<id>/update/ {event:"run_confirmed_by_operator"}
    * → telemetry.start({vehicleId}). Confirm event is `run_confirmed_by_operator`,
-   * NOT `run_confirmed` — verified against RunLifecycleEvents.
+   * NOT `run_confirmed` — verified against RunLifecycleEvents. The two POSTs are
+   * deliberately back-to-back with no await point the caller can interrupt —
+   * see the module comment above for why.
    */
   async function createRun(input: CreateRunInput): Promise<void> {
     const created = await apiPost<CreateRunResponse>('/create-run/', input);

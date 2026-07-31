@@ -139,9 +139,14 @@ describe('Run flow — start, advance, end', () => {
     cy.get('[data-testid="trip-option"]').first().click();
 
     cy.get('[data-testid="vehicle-option"]').first().click();
-    cy.get('[data-testid="confirm-run"]').click();
 
-    // createRun (create + confirm) resolves → RunProgress renders.
+    // --- Step 1: Initialize — purely a client-side review step, no request yet ---
+    cy.get('[data-testid="initialize-run"]').click();
+    cy.get('[data-testid="review-summary"]').should('be.visible').and('contain', 'BUS-001');
+
+    // --- Step 2: Confirm — this is what actually calls the backend
+    //     (create-run + confirm-by-operator back to back) and starts telemetry ---
+    cy.get('[data-testid="confirm-run"]').click();
     cy.wait('@createRun').its('request.body').should('deep.equal', {
       vehicle_id: 'BUS-001',
       operator_id: 'op-e2e',
@@ -150,6 +155,9 @@ describe('Run flow — start, advance, end', () => {
       direction_id: 0,
       shape_id: 'SH1',
       schedule_relationship: 'SCHEDULED',
+    });
+    cy.wait('@update').its('request.body').should('deep.equal', {
+      event: 'run_confirmed_by_operator',
     });
 
     // RunProgress shows the confirmed state (from the confirm response).

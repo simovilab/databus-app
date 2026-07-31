@@ -31,18 +31,18 @@
       </Transition>
 
       <app-loading
-        v-if="!justConfirmed && initialLoading"
+        v-if="!justConfirmed && phase === 'setup' && initialLoading"
         message="Loading schedule…"
       />
       <app-error
-        v-else-if="!justConfirmed && initialError"
+        v-else-if="!justConfirmed && phase === 'setup' && initialError"
         :error="initialError"
         fallback-message="Could not load schedule data. Please try again."
         retry-label="Retry"
         @retry="loadInitial"
       />
 
-      <template v-else-if="!justConfirmed">
+      <template v-else-if="!justConfirmed && phase === 'setup'">
         <!-- Route -->
         <section class="setup-section">
           <h2 class="step-title">1. Select a route</h2>
@@ -168,16 +168,77 @@
           fallback-message="Could not start the run. Please try again."
         />
       </template>
+
+      <!-- Review: purely a client-side preview — no run exists server-side
+           yet. Backing out (Back, header Cancel, swipe-dismiss) is just a
+           local state reset; only "Confirm run" below ever calls the
+           backend. -->
+      <template v-else-if="!justConfirmed && phase === 'reviewing'">
+        <section class="setup-section">
+          <h2 class="step-title">Review your run</h2>
+          <p class="step-empty">Confirm these details before you start driving.</p>
+        </section>
+
+        <ion-list data-testid="review-summary">
+          <ion-item>
+            <ion-label>
+              <p>Route</p>
+              <h2>{{ selectedRoute?.route_short_name || selectedRoute?.route_id }}</h2>
+              <p>{{ selectedRoute?.route_long_name }}</p>
+            </ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-label>
+              <p>Trip</p>
+              <h2>{{ selectedTrip ? tripLabel(selectedTrip) : '' }}</h2>
+              <p>{{ selectedTrip?.trip_headsign }}</p>
+            </ion-label>
+          </ion-item>
+          <ion-item lines="none">
+            <ion-label>
+              <p>Vehicle</p>
+              <h2>{{ vehicleId }}</h2>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+
+        <app-error
+          v-if="confirmError"
+          class="setup-section confirm-error"
+          data-testid="confirm-error"
+          :error="confirmError"
+          fallback-message="Could not start the run. Please try again."
+        />
+      </template>
     </ion-content>
 
     <ion-footer>
       <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-button
+            v-if="phase === 'reviewing' && !justConfirmed"
+            data-testid="review-back"
+            :disabled="busy"
+            @click="onBackFromReview"
+          >Back</ion-button>
+        </ion-buttons>
         <ion-buttons slot="end">
           <ion-button
-            data-testid="confirm-run"
+            v-if="phase === 'setup'"
+            data-testid="initialize-run"
             color="primary"
             :disabled="!canConfirm || busy"
-            @click="onConfirm"
+            @click="onInitialize"
+          >
+            <ion-spinner v-if="busy" name="crescent" slot="start" />
+            Initialize run
+          </ion-button>
+          <ion-button
+            v-else
+            data-testid="confirm-run"
+            color="primary"
+            :disabled="busy"
+            @click="onConfirmReview"
           >
             <ion-spinner v-if="busy" name="crescent" slot="start" />
             Confirm run
@@ -191,12 +252,20 @@
 <script setup lang="ts">
 // Trip setup: a single screen with route, trip, and vehicle pickers all
 // visible at once (route → trip → vehicle, services/schedule.ts), rather
-// than a stepper — the operator fills everything in one pass and taps
-// "Confirm run" once. A GTFS trip already carries its direction_id and
+// than a stepper. "Initialize run" is a client-side-only step — it validates
+// the selection and shows a review summary; nothing is sent to the backend
+// yet. Only "Confirm run" on the review screen actually calls
+// runStore.createRun() (create-run + confirm-by-operator + telemetry start,
+// back to back). This is deliberate, not just a naming choice: the backend
+// has no cancel_run transition from Initialized (only from
+// Confirmed/Tracking — reproduced live, deploy/DATABUS_INTEGRATION.md B4), so
+// a run must never be created until the operator has already committed to
+// it — otherwise "Back" or closing the sheet would leave an unconfirmable,
+// uncancellable run stuck server-side, permanently binding the operator,
+// vehicle, and trip. A GTFS trip already carries its direction_id and
 // shape_id, so picking a trip determines both — there is no separate
-// direction picker. The store owns telemetry start/stop; this modal only
-// creates the run. All schedule failures surface as ApiError and render
-// via <AppError>.
+// direction picker. All failures surface as ApiError and render via
+// <AppError>.
 import {
   IonButton,
   IonButtons,
@@ -238,6 +307,8 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+type Phase = 'setup' | 'reviewing';
+
 const props = defineProps<{ isOpen: boolean }>();
 const emit = defineEmits<{
   (e: 'dismissed'): void;
@@ -246,6 +317,7 @@ const emit = defineEmits<{
 const authStore = useAuthStore();
 const runStore = useRunStore();
 
+const phase = ref<Phase>('setup');
 const justConfirmed = ref(false);
 const initialLoading = ref(false);
 const initialError = ref<unknown>(null);
@@ -264,6 +336,11 @@ const selectedVehicleId = ref<string | null>(null);
 
 const manualVehicle = ref(false);
 const manualVehicleId = ref('');
+
+// The reviewed-but-not-yet-submitted run input — nothing is sent to the
+// backend until onConfirmReview() runs. Built by onInitialize(), read by
+// onConfirmReview(); cleared on reset.
+const pendingInput = ref<CreateRunInput | null>(null);
 
 const selectedRoute = computed(
   () => routes.value.find((r) => r.route_id === selectedRouteId.value) ?? null,
@@ -293,6 +370,7 @@ const canConfirm = computed(
 );
 
 function resetState(): void {
+  phase.value = 'setup';
   justConfirmed.value = false;
   initialLoading.value = false;
   initialError.value = null;
@@ -308,6 +386,7 @@ function resetState(): void {
   selectedVehicleId.value = null;
   manualVehicle.value = false;
   manualVehicleId.value = '';
+  pendingInput.value = null;
 }
 
 /** Load routes + vehicles on modal open. */
@@ -377,7 +456,22 @@ function isCreateRunError(err: unknown): err is ApiError {
   return err instanceof ApiError;
 }
 
-async function onConfirm(): Promise<void> {
+/** Turns a caught error into the message shown via <AppError>. */
+function toConfirmError(err: unknown, fallbackStep: string): Error {
+  if (isCreateRunError(err)) {
+    // Surface the backend's actual reason (e.g. "Operator 'op-demo' is
+    // already assigned to run …") instead of the opaque validation step.
+    const detail = extractApiErrorDetail(err);
+    return new Error(detail ?? `Could not ${fallbackStep} (step "${err.step ?? 'unknown'}").`);
+  }
+  if (err instanceof Error) return err;
+  return new Error(`Could not ${fallbackStep}. Please try again.`);
+}
+
+/** Step 1: validate the selection and move to the review screen. Purely
+ * client-side — nothing is sent to the backend here, so there is nothing to
+ * release if the operator backs out or closes the sheet from this point on. */
+function onInitialize(): void {
   const operatorId = authStore.session?.operatorId;
   if (!operatorId) {
     confirmError.value = new Error('No operator session. Please log in again.');
@@ -393,23 +487,33 @@ async function onConfirm(): Promise<void> {
   }
 
   confirmError.value = null;
+  // direction_id and shape_id come from the selected trip — the trip is the
+  // authoritative route+direction+shape bundle (see services/schedule.ts).
+  pendingInput.value = {
+    vehicle_id: vehicleId.value,
+    operator_id: operatorId,
+    route_id: selectedRoute.value.route_id,
+    trip_id: selectedTrip.value.trip_id,
+    direction_id: selectedTrip.value.direction_id,
+    shape_id: selectedTrip.value.shape_id,
+    schedule_relationship: 'SCHEDULED',
+  };
+  phase.value = 'reviewing';
+}
+
+/** Step 2: the operator accepts the reviewed run — this is the only point
+ * that actually calls the backend (create-run + confirm + telemetry start,
+ * master §6.6). The run has fully started once this resolves — everything
+ * from here down is a purely decorative confirmation before closing the
+ * sheet. */
+async function onConfirmReview(): Promise<void> {
+  if (!pendingInput.value) return;
+
+  confirmError.value = null;
   busy.value = true;
   try {
-    // direction_id and shape_id come from the selected trip — the trip is the
-    // authoritative route+direction+shape bundle (see services/schedule.ts).
-    const input: CreateRunInput = {
-      vehicle_id: vehicleId.value,
-      operator_id: operatorId,
-      route_id: selectedRoute.value.route_id,
-      trip_id: selectedTrip.value.trip_id,
-      direction_id: selectedTrip.value.direction_id,
-      shape_id: selectedTrip.value.shape_id,
-      schedule_relationship: 'SCHEDULED',
-    };
-    // createRun posts create-run → confirm → telemetry.start (master §6.6).
-    // The run has fully started at this point — everything from here down is
-    // a purely decorative confirmation before closing the sheet.
-    await runStore.createRun(input);
+    await runStore.createRun(pendingInput.value);
+    pendingInput.value = null;
     justConfirmed.value = true;
     const pulseMs = prefersReducedMotion() ? 0 : 700;
     setTimeout(() => {
@@ -417,20 +521,17 @@ async function onConfirm(): Promise<void> {
       emit('dismissed');
     }, pulseMs);
   } catch (err) {
-    if (isCreateRunError(err)) {
-      // Surface the backend's actual reason (e.g. "Operator 'op-demo' is
-      // already assigned to run …") instead of the opaque validation step.
-      const detail = extractApiErrorDetail(err);
-      confirmError.value = new Error(
-        detail ?? `Could not start the run (step "${err.step ?? 'unknown'}").`,
-      );
-    } else if (err instanceof Error) {
-      confirmError.value = err;
-    } else {
-      confirmError.value = new Error('Could not start the run. Please try again.');
-    }
+    confirmError.value = toConfirmError(err, 'start the run');
     busy.value = false;
   }
+}
+
+/** The operator backs out of the review screen to change a selection — purely
+ * client-side, since nothing was ever created server-side. */
+function onBackFromReview(): void {
+  confirmError.value = null;
+  pendingInput.value = null;
+  phase.value = 'setup';
 }
 
 /**

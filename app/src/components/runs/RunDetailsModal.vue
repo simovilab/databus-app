@@ -31,27 +31,29 @@
           </ion-item>
           <ion-item>
             <ion-label slot="start" class="detail-label">Ruta</ion-label>
-            <ion-label slot="end">{{ entry.routeId }}</ion-label>
+            <ion-label slot="end" class="detail-value">
+              <span>{{ entry.routeLabel || entry.routeId }}</span>
+              <span class="detail-raw-id">{{ entry.routeId }}</span>
+            </ion-label>
           </ion-item>
           <ion-item>
-            <ion-label slot="start" class="detail-label">Trip</ion-label>
-            <ion-label slot="end">{{ entry.tripId }}</ion-label>
-          </ion-item>
-          <ion-item>
-            <ion-label slot="start" class="detail-label">Sentido</ion-label>
-            <ion-label slot="end">{{ entry.directionId }}</ion-label>
+            <ion-label slot="start" class="detail-label">Viaje</ion-label>
+            <ion-label slot="end" class="detail-value">
+              <span>{{ entry.tripLabel || entry.tripId }}</span>
+              <span class="detail-raw-id tnum">{{ entry.tripId }}</span>
+            </ion-label>
           </ion-item>
           <ion-item>
             <ion-label slot="start" class="detail-label">Vehículo</ion-label>
-            <ion-label slot="end">{{ entry.vehicleId }}</ion-label>
+            <ion-label slot="end" class="tnum">{{ entry.vehicleId }}</ion-label>
           </ion-item>
           <ion-item>
             <ion-label slot="start" class="detail-label">Inicio</ion-label>
-            <ion-label slot="end">{{ formatDateTime(entry.startedAt) }}</ion-label>
+            <ion-label slot="end" class="tnum">{{ formatDateTime(entry.startedAt) }}</ion-label>
           </ion-item>
           <ion-item>
             <ion-label slot="start" class="detail-label">Fin</ion-label>
-            <ion-label slot="end">{{ formatDateTime(entry.endedAt) }}</ion-label>
+            <ion-label slot="end" class="tnum">{{ formatDateTime(entry.endedAt) }}</ion-label>
           </ion-item>
         </ion-list>
 
@@ -150,17 +152,34 @@ function stateColor(state: RunState): 'success' | 'warning' | 'danger' | 'medium
 <style scoped>
 .detail-label {
   color: var(--ion-color-medium);
-  font-size: 0.85rem;
+  font-size: var(--app-font-size-sm);
+}
+
+/* Ruta/Viaje rows: the readable label as the primary line, with the raw
+   GTFS id kept reachable underneath in small monospace — this is the
+   diagnostics screen, so the id is worth keeping even though the label is
+   what a driver actually reads (readable-labels plan §3). */
+.detail-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.detail-raw-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--app-font-size-xs);
+  color: var(--ion-color-medium);
 }
 
 .section-title {
   margin: var(--app-spacing-lg, 24px) 0 var(--app-spacing-sm, 8px);
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: var(--app-font-size-lg);
+  font-weight: var(--app-font-weight-semibold);
 }
 
 .detail-empty {
   color: var(--ion-color-medium);
-  font-size: 0.9rem;
+  font-size: var(--app-font-size-md);
 }
 </style>

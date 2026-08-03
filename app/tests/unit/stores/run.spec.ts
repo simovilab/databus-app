@@ -47,6 +47,11 @@ const input: CreateRunInput = {
   schedule_relationship: 'SCHEDULED',
 };
 
+// Driver-facing labels createRun() now requires as a second argument
+// (readable-labels plan §3) — stand-ins for what TripSetupModal computes via
+// src/utils/labels.ts for its review screen.
+const labels = { route: 'L1 · Sin milla', trip: '06:20 · desde Artes Plásticas → Deportivas' };
+
 describe('useRunStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -74,7 +79,7 @@ describe('useRunStore', () => {
       );
 
     const store = useRunStore();
-    await store.createRun(input);
+    await store.createRun(input, labels);
 
     expect(store.activeRun).toEqual({
       runId: 'run-1',
@@ -84,6 +89,8 @@ describe('useRunStore', () => {
       directionId: 0,
       shapeId: 'shape-1',
       state: 'Confirmed',
+      routeLabel: labels.route,
+      tripLabel: labels.trip,
     });
 
     // create-run call
@@ -114,7 +121,7 @@ describe('useRunStore', () => {
     fakeTelemetry.start.mockRejectedValueOnce(new Error('broker unreachable'));
 
     const store = useRunStore();
-    await expect(store.createRun(input)).resolves.toBeUndefined();
+    await expect(store.createRun(input, labels)).resolves.toBeUndefined();
     expect(store.activeRun?.state).toBe('Confirmed');
   });
 
@@ -132,7 +139,7 @@ describe('useRunStore', () => {
       );
 
     const store = useRunStore();
-    await store.createRun(input);
+    await store.createRun(input, labels);
     const state = await store.refreshState();
 
     expect(state).toBe('Tracking');
@@ -159,7 +166,7 @@ describe('useRunStore', () => {
       );
 
     const store = useRunStore();
-    await store.createRun(input);
+    await store.createRun(input, labels);
     fakeTelemetry.stop.mockClear();
     const state = await store.refreshState();
 
@@ -169,6 +176,8 @@ describe('useRunStore', () => {
     expect(recordSpy.mock.calls[0][0]).toMatchObject({
       runId: 'run-1',
       finalState: 'Completed',
+      routeLabel: labels.route,
+      tripLabel: labels.trip,
     });
   });
 
@@ -191,7 +200,7 @@ describe('useRunStore', () => {
       );
 
     const store = useRunStore();
-    await store.createRun(input); // leaves the run in Confirmed (not moving)
+    await store.createRun(input, labels); // leaves the run in Confirmed (not moving)
     await store.endRun();
 
     expect(store.activeRun?.state).toBe('Cancelled');
@@ -220,7 +229,7 @@ describe('useRunStore', () => {
       );
 
     const store = useRunStore();
-    await store.createRun(input);
+    await store.createRun(input, labels);
     await store.refreshState(); // advances local state to In Progress
     await store.endRun();
 
@@ -246,7 +255,7 @@ describe('useRunStore', () => {
       );
 
     const store = useRunStore();
-    await store.createRun(input);
+    await store.createRun(input, labels);
     await store.endRun('run_interrupted');
 
     const [, endInit] = fetchMock.mock.calls[2];

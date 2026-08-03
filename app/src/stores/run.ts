@@ -79,8 +79,18 @@ export const useRunStore = defineStore('run', () => {
    * NOT `run_confirmed` — verified against RunLifecycleEvents. The two POSTs are
    * deliberately back-to-back with no await point the caller can interrupt —
    * see the module comment above for why.
+   *
+   * `labels` are the driver-facing route/trip text the caller already computed
+   * for its review screen (readable-labels plan §3) — captured here, at run
+   * creation, because tripId/shapeId never encode the destination; no amount
+   * of string parsing later can recover it. Purely descriptive: never sent to
+   * the backend (CreateRunInput is the literal POST body and stays untouched),
+   * so this can't land between the two POSTs above without violating that.
    */
-  async function createRun(input: CreateRunInput): Promise<void> {
+  async function createRun(
+    input: CreateRunInput,
+    labels: { route: string; trip: string },
+  ): Promise<void> {
     const created = await apiPost<CreateRunResponse>('/create-run/', input);
     const confirmed = await apiPost<RunUpdateResponse>(
       `/runs/${created.run_id}/update/`,
@@ -95,6 +105,8 @@ export const useRunStore = defineStore('run', () => {
       directionId: input.direction_id,
       shapeId: input.shape_id,
       state: confirmed.run_lifecycle_state as RunState,
+      routeLabel: labels.route,
+      tripLabel: labels.trip,
     };
     startedAt.value = new Date().toISOString();
 
@@ -151,6 +163,8 @@ export const useRunStore = defineStore('run', () => {
         finalState,
         startedAt: startedAt.value ?? new Date().toISOString(),
         endedAt: new Date().toISOString(),
+        routeLabel: run.routeLabel,
+        tripLabel: run.tripLabel,
       });
     } catch {
       // swallow — history is a convenience, not part of the run contract

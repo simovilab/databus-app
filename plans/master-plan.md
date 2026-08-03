@@ -295,6 +295,8 @@ export interface ActiveRun {
   directionId: number;
   shapeId: string;
   state: RunState;
+  routeLabel: string;              // driver-facing label, e.g. "L1 · Sin milla"
+  tripLabel: string;                // e.g. "06:20 · desde Artes Plásticas → Deportivas"
 }
 
 export interface Fix {           // a single GPS sample

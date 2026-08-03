@@ -36,6 +36,12 @@ export interface ActiveRun {
   directionId: number;
   shapeId: string;
   state: RunState;
+  // Driver-facing labels captured at run creation (readable-labels plan §3) —
+  // the destination is not encoded anywhere in tripId/shapeId, so no amount
+  // of string parsing can recover it later. Required here because every
+  // ActiveRun is created fresh by createRun(), which always has them.
+  routeLabel: string; // "L1 · Sin milla"
+  tripLabel: string; // "06:20 · desde Artes Plásticas → Deportivas"
 }
 
 /**
@@ -55,6 +61,11 @@ export interface RunHistoryEntry {
   finalState: RunState;
   startedAt: string; // ISO 8601, when the run was created on this device
   endedAt: string; // ISO 8601, when it reached a terminal state
+  // Optional, unlike ActiveRun.routeLabel/tripLabel: entries already
+  // persisted in Capacitor Preferences before this change have no labels.
+  // Every consumer must fall back to the raw id rather than render blank.
+  routeLabel?: string;
+  tripLabel?: string;
 }
 
 /** A single GPS sample, ready to publish to the telemetry broker. */

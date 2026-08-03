@@ -15,21 +15,22 @@
       <ion-card-content>
         <ion-list lines="full">
           <ion-item>
-            <ion-label slot="start" class="detail-label">Route</ion-label>
-            <ion-label slot="end" data-testid="run-route">{{ run?.routeId }}</ion-label>
+            <ion-label slot="start" class="detail-label">Ruta</ion-label>
+            <ion-label slot="end" data-testid="run-route">{{ routeLabelText }}</ion-label>
           </ion-item>
           <ion-item>
-            <ion-label slot="start" class="detail-label">Trip</ion-label>
-            <ion-label slot="end" data-testid="run-trip">{{ run?.tripId }}</ion-label>
+            <ion-label slot="start" class="detail-label">Viaje</ion-label>
+            <ion-label slot="end" data-testid="run-trip">{{ tripLabelText }}</ion-label>
           </ion-item>
           <ion-item>
-            <ion-label slot="start" class="detail-label">Vehicle</ion-label>
-            <ion-label slot="end" data-testid="run-vehicle">{{ run?.vehicleId }}</ion-label>
+            <ion-label slot="start" class="detail-label">Vehículo</ion-label>
+            <ion-label slot="end" class="tnum" data-testid="run-vehicle">{{ run?.vehicleId }}</ion-label>
           </ion-item>
           <ion-item>
-            <ion-label slot="start" class="detail-label">Last fix</ion-label>
+            <ion-label slot="start" class="detail-label">Última posición</ion-label>
             <ion-label
               slot="end"
+              class="tnum"
               data-testid="run-last-fix"
             >{{ lastFixText }}</ion-label>
           </ion-item>
@@ -63,7 +64,7 @@
         @click="onEndRun"
       >
         <ion-icon slot="start" :icon="stopCircleOutline" />
-        End run
+        Finalizar run
       </ion-button>
       <div v-else class="terminal-actions">
         <Transition name="check-pop">
@@ -72,13 +73,13 @@
           </div>
         </Transition>
         <p class="terminal-note" data-testid="run-terminal-note">
-          This run has ended.
+          Este run ha terminado.
         </p>
         <ion-button
           expand="block"
           data-testid="start-new-run-button"
           @click="emit('start-new')"
-        >Start a new run</ion-button>
+        >Iniciar un nuevo run</ion-button>
       </div>
     </div>
   </div>
@@ -146,6 +147,13 @@ const isTerminal = computed(
   () => (run.value?.state ? TERMINAL_STATES.has(run.value.state) : false),
 );
 
+// Driver-facing labels captured at run creation (readable-labels plan §3).
+// Falls back to the raw id — every ActiveRun createRun() produces has these,
+// but rendering defensively costs nothing and matches how RunHistoryList /
+// RunDetailsModal handle the same (optional) fields on older entries.
+const routeLabelText = computed(() => run.value?.routeLabel || run.value?.routeId || '');
+const tripLabelText = computed(() => run.value?.tripLabel || run.value?.tripId || '');
+
 const stateColor = computed(() => {
   if (!run.value) return 'medium';
   if (isTerminal.value) return 'medium';
@@ -162,7 +170,7 @@ const showEndPulse = ref(false);
 
 const lastFixText = computed(() => {
   const fix = telemetry.value.lastFix.value;
-  if (!fix) return 'No fix yet';
+  if (!fix) return 'Sin posición aún';
   const lat = fix.latitude.toFixed(5);
   const lon = fix.longitude.toFixed(5);
   return `${lat}, ${lon}`;
@@ -171,17 +179,17 @@ const lastFixText = computed(() => {
 const telemetryLabel = computed(() => {
   switch (telemetry.value.status.value) {
     case 'streaming':
-      return 'Streaming';
+      return 'Transmitiendo';
     case 'buffering':
-      return 'Buffering';
+      return 'Almacenando';
     case 'starting':
-      return 'Connecting…';
+      return 'Conectando…';
     case 'unavailable':
-      return 'Unavailable';
+      return 'No disponible';
     case 'error':
-      return 'Not connected';
+      return 'Sin conexión';
     default:
-      return 'Not connected';
+      return 'Sin conexión';
   }
 });
 
@@ -206,21 +214,21 @@ const telemetryDetail = computed(() => {
   const status = telemetry.value.status.value;
   const queued = telemetry.value.queuedCount.value;
   if (status === 'buffering') {
-    return `Offline, queuing fixes locally (${queued} queued).`;
+    return `Sin conexión, almacenando posiciones localmente (${queued} en espera).`;
   }
   if (status === 'streaming') {
-    return `Publishing GPS to the broker.${queued > 0 ? ` (${queued} still queued)` : ''}`;
+    return `Enviando GPS al broker.${queued > 0 ? ` (${queued} aún en espera)` : ''}`;
   }
   if (status === 'starting') {
-    return 'Acquiring GPS and connecting to the broker…';
+    return 'Obteniendo GPS y conectando al broker…';
   }
   if (status === 'unavailable') {
-    return 'GPS reporting is not available in the browser — use the installed app. The run is unaffected.';
+    return 'El reporte de GPS no está disponible en el navegador — usa la app instalada. El run no se ve afectado.';
   }
   if (status === 'error') {
-    return 'Telemetry is unavailable. The run continues; fixes will retry.';
+    return 'La telemetría no está disponible. El run continúa; las posiciones se reintentarán.';
   }
-  return 'Telemetry is idle.';
+  return 'La telemetría está inactiva.';
 });
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -273,7 +281,7 @@ async function onEndRun(): Promise<void> {
     endError.value =
       err instanceof Error
         ? err.message
-        : 'Could not end the run. Please try again.';
+        : 'No se pudo finalizar el run. Intenta de nuevo.';
   } finally {
     ending.value = false;
   }
@@ -357,13 +365,13 @@ onUnmounted(stopPolling);
 
 .detail-label {
   color: var(--ion-color-medium);
-  font-size: 0.85rem;
+  font-size: var(--app-font-size-sm);
 }
 
 .telemetry-detail {
   margin: 0;
   color: var(--ion-color-medium);
-  font-size: 0.9rem;
+  font-size: var(--app-font-size-md);
 }
 
 .run-actions {

@@ -24,7 +24,7 @@
         >
           <ion-card-header class="home-run__header" @click="goToRuns">
             <ion-card-title>Run en curso</ion-card-title>
-            <ion-card-subtitle>{{ activeRun.routeId }} · {{ activeRun.tripId }}</ion-card-subtitle>
+            <ion-card-subtitle>{{ activeRun.routeLabel }} · {{ activeRun.tripLabel }}</ion-card-subtitle>
           </ion-card-header>
           <ion-card-content @click="goToRuns">
             <Transition name="state-pop" mode="out-in">
@@ -177,7 +177,7 @@ function goToRuns(): void {
 .home-run__hint {
   margin: var(--app-spacing-sm, 8px) 0 0;
   color: var(--ion-color-medium);
-  font-size: 0.85rem;
+  font-size: var(--app-font-size-sm);
 }
 
 .home-recent__header {
@@ -188,8 +188,8 @@ function goToRuns(): void {
 
 .home-recent__title {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: var(--app-font-size-lg);
+  font-weight: var(--app-font-weight-semibold);
 }
 
 /* Gentle crossfade between the active-run card and the empty-state card. */

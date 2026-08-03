@@ -18,8 +18,8 @@
         @click="emit('select', entry)"
       >
         <ion-label>
-          <h2>{{ entry.routeId }} · {{ entry.tripId }}</h2>
-          <p>{{ formatDateTime(entry.endedAt) }}</p>
+          <h2>{{ entryRouteLabel(entry) }} · {{ entryTripLabel(entry) }}</h2>
+          <p class="tnum">{{ formatDateTime(entry.endedAt) }}</p>
         </ion-label>
         <ion-badge slot="end" :color="stateColor(entry.finalState)">{{ entry.finalState }}</ion-badge>
       </ion-item>
@@ -59,6 +59,16 @@ const visibleEntries = computed(() =>
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
+}
+
+// routeLabel/tripLabel are optional on RunHistoryEntry (readable-labels plan
+// §3/§6) — entries already persisted in Capacitor Preferences before this
+// change have none. Fall back to the raw id rather than render blank.
+function entryRouteLabel(entry: RunHistoryEntry): string {
+  return entry.routeLabel || entry.routeId;
+}
+function entryTripLabel(entry: RunHistoryEntry): string {
+  return entry.tripLabel || entry.tripId;
 }
 
 function stateColor(state: RunState): 'success' | 'warning' | 'danger' | 'medium' {

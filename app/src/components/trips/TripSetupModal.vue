@@ -23,18 +23,18 @@
     :initial-breakpoint="1"
     :handle="false"
     role="dialog"
-    aria-label="Start a run"
+    aria-label="Iniciar un run"
     @did-dismiss="onDismiss"
   >
     <ion-header>
       <ion-toolbar>
-        <ion-title>Start run</ion-title>
+        <ion-title>Iniciar run</ion-title>
         <ion-buttons slot="end">
           <ion-button
             data-testid="modal-close"
             :disabled="busy"
             @click="onCancel"
-          >Cancel</ion-button>
+          >Cancelar</ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -43,27 +43,27 @@
       <Transition name="check-pop">
         <div v-if="justConfirmed" class="confirm-pulse" aria-hidden="true">
           <ion-icon :icon="checkmarkCircle" color="success" />
-          <p>Run started</p>
+          <p>Run iniciado</p>
         </div>
       </Transition>
 
       <app-loading
         v-if="!justConfirmed && phase === 'setup' && initialLoading"
-        message="Loading schedule…"
+        message="Cargando horario…"
       />
       <app-error
         v-else-if="!justConfirmed && phase === 'setup' && initialError"
         :error="initialError"
-        fallback-message="Could not load schedule data. Please try again."
-        retry-label="Retry"
+        fallback-message="No se pudo cargar el horario. Intenta de nuevo."
+        retry-label="Reintentar"
         @retry="loadInitial"
       />
 
       <template v-else-if="!justConfirmed && phase === 'setup'">
         <!-- Route -->
         <section class="setup-section">
-          <h2 class="step-title">1. Select a route</h2>
-          <p v-if="routes.length === 0" class="step-empty">No routes available for today's feed.</p>
+          <h2 class="step-title">1. Selecciona una ruta</h2>
+          <p v-if="routes.length === 0" class="step-empty">No hay rutas disponibles para hoy.</p>
           <ion-list v-else>
             <ion-radio-group
               v-model="selectedRouteId"
@@ -79,9 +79,13 @@
                   label-placement="end"
                   justify="start"
                 >
-                  <ion-label>
-                    <h2>{{ route.route_short_name || route.route_id }}</h2>
-                    <p>{{ route.route_long_name }}</p>
+                  <ion-label class="route-option-label">
+                    <span
+                      class="route-dot"
+                      :style="{ backgroundColor: routeDotColor(route) }"
+                      aria-hidden="true"
+                    />
+                    <h2>{{ routeCompactLabel(route, routes) }}</h2>
                   </ion-label>
                 </ion-radio>
               </ion-item>
@@ -91,41 +95,49 @@
 
         <!-- Trip (a GTFS trip carries its own direction + shape, so there is
              no separate direction picker — see services/schedule.ts). Loads
-             as soon as a route is selected, without leaving this screen. -->
+             as soon as a route is selected, without leaving this screen.
+             Grouped by destination (trip_headsign, the GTFS-defined
+             destination) so the 3 destinations don't interleave across a
+             123-row scroll — see src/utils/labels.ts and the plan's §2. -->
         <section class="setup-section">
-          <h2 class="step-title">2. Select a trip</h2>
-          <p v-if="!selectedRouteId" class="step-empty">Select a route first.</p>
-          <app-loading v-else-if="tripsLoading" message="Loading trips…" />
+          <h2 class="step-title">2. Selecciona un viaje</h2>
+          <p v-if="!selectedRouteId" class="step-empty">Selecciona una ruta primero.</p>
+          <app-loading v-else-if="tripsLoading" message="Cargando viajes…" />
           <app-error
             v-else-if="tripsError"
             :error="tripsError"
-            fallback-message="Could not load trips. Please try again."
-            retry-label="Retry"
+            fallback-message="No se pudieron cargar los viajes. Intenta de nuevo."
+            retry-label="Reintentar"
             @retry="loadTrips"
           />
           <template v-else>
-            <p v-if="trips.length === 0" class="step-empty">No trips scheduled for this route today.</p>
+            <p v-if="trips.length === 0" class="step-empty">No hay viajes programados para esta ruta hoy.</p>
             <ion-list v-else>
               <ion-radio-group
                 v-model="selectedTripId"
                 allow-empty-selection
               >
-                <ion-item
-                  v-for="trip in trips"
-                  :key="trip.trip_id"
-                  data-testid="trip-option"
-                >
-                  <ion-radio
-                    :value="trip.trip_id"
-                    label-placement="end"
-                    justify="start"
+                <template v-for="group in tripGroups" :key="group.headsign">
+                  <ion-item-divider sticky>
+                    <ion-label>Hacia {{ group.headsign }} · {{ tripCountLabel(group.trips.length) }}</ion-label>
+                  </ion-item-divider>
+                  <ion-item
+                    v-for="trip in group.trips"
+                    :key="trip.trip_id"
+                    data-testid="trip-option"
                   >
-                    <ion-label>
-                      <h2>{{ tripLabel(trip) }}</h2>
-                      <p>{{ trip.trip_headsign }}</p>
-                    </ion-label>
-                  </ion-radio>
-                </ion-item>
+                    <ion-radio
+                      :value="trip.trip_id"
+                      label-placement="end"
+                      justify="start"
+                    >
+                      <ion-label>
+                        <h2 class="tnum">{{ tripTime(trip) }}</h2>
+                        <p v-if="tripOrigin(trip, trips)">desde {{ tripOrigin(trip, trips) }}</p>
+                      </ion-label>
+                    </ion-radio>
+                  </ion-item>
+                </template>
               </ion-radio-group>
             </ion-list>
           </template>
@@ -133,15 +145,15 @@
 
         <!-- Vehicle -->
         <section class="setup-section">
-          <h2 class="step-title">3. Select a vehicle</h2>
+          <h2 class="step-title">3. Selecciona un vehículo</h2>
           <ion-toggle
             v-model="manualVehicle"
             data-testid="vehicle-manual-toggle"
-          >Enter vehicle ID manually</ion-toggle>
+          >Ingresar ID de vehículo manualmente</ion-toggle>
 
           <ion-list v-if="!manualVehicle">
             <p v-if="vehicles.length === 0" class="step-empty">
-              No vehicles listed. Toggle manual entry to type an ID.
+              No hay vehículos listados. Activa la entrada manual para escribir un ID.
             </p>
             <ion-radio-group
               v-model="selectedVehicleId"
@@ -158,8 +170,8 @@
                   justify="start"
                 >
                   <ion-label>
-                    <h2>{{ vehicle.id }}</h2>
-                    <p>{{ vehicle.license_plate }}</p>
+                    <h2 class="tnum">{{ vehicle.id }}</h2>
+                    <p class="tnum">{{ vehicle.license_plate }}</p>
                   </ion-label>
                 </ion-radio>
               </ion-item>
@@ -170,9 +182,9 @@
             <ion-input
               v-model="manualVehicleId"
               data-testid="vehicle-manual-input"
-              label="Vehicle ID"
+              label="ID de vehículo"
               label-placement="stacked"
-              placeholder="e.g. BUS-001"
+              placeholder="ej. BUS-001"
             />
           </ion-item>
         </section>
@@ -182,7 +194,7 @@
           class="setup-section confirm-error"
           data-testid="confirm-error"
           :error="confirmError"
-          fallback-message="Could not start the run. Please try again."
+          fallback-message="No se pudo iniciar el run. Intenta de nuevo."
         />
       </template>
 
@@ -192,29 +204,27 @@
            backend. -->
       <template v-else-if="!justConfirmed && phase === 'reviewing'">
         <section class="setup-section">
-          <h2 class="step-title">Review your run</h2>
-          <p class="step-empty">Confirm these details before you start driving.</p>
+          <h2 class="step-title">Revisa tu run</h2>
+          <p class="step-empty">Confirma estos detalles antes de empezar a conducir.</p>
         </section>
 
         <ion-list data-testid="review-summary">
           <ion-item>
             <ion-label>
-              <p>Route</p>
-              <h2>{{ selectedRoute?.route_short_name || selectedRoute?.route_id }}</h2>
-              <p>{{ selectedRoute?.route_long_name }}</p>
+              <p>Ruta</p>
+              <h2>{{ selectedRoute ? routeCompactLabel(selectedRoute, routes) : '' }}</h2>
             </ion-label>
           </ion-item>
           <ion-item>
             <ion-label>
-              <p>Trip</p>
-              <h2>{{ selectedTrip ? tripLabel(selectedTrip) : '' }}</h2>
-              <p>{{ selectedTrip?.trip_headsign }}</p>
+              <p>Viaje</p>
+              <h2 class="tnum">{{ selectedTrip ? tripCompactLabel(selectedTrip, trips) : '' }}</h2>
             </ion-label>
           </ion-item>
           <ion-item lines="none">
             <ion-label>
-              <p>Vehicle</p>
-              <h2>{{ vehicleId }}</h2>
+              <p>Vehículo</p>
+              <h2 class="tnum">{{ vehicleId }}</h2>
             </ion-label>
           </ion-item>
         </ion-list>
@@ -224,7 +234,7 @@
           class="setup-section confirm-error"
           data-testid="confirm-error"
           :error="confirmError"
-          fallback-message="Could not start the run. Please try again."
+          fallback-message="No se pudo iniciar el run. Intenta de nuevo."
         />
       </template>
     </ion-content>
@@ -237,7 +247,7 @@
             data-testid="review-back"
             :disabled="busy"
             @click="onBackFromReview"
-          >Back</ion-button>
+          >Atrás</ion-button>
         </ion-buttons>
         <ion-buttons slot="end">
           <ion-button
@@ -248,7 +258,7 @@
             @click="onInitialize"
           >
             <ion-spinner v-if="busy" name="crescent" slot="start" />
-            Initialize run
+            Revisar run
           </ion-button>
           <ion-button
             v-else
@@ -258,7 +268,7 @@
             @click="onConfirmReview"
           >
             <ion-spinner v-if="busy" name="crescent" slot="start" />
-            Confirm run
+            Confirmar run
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -292,6 +302,7 @@ import {
   IonIcon,
   IonInput,
   IonItem,
+  IonItemDivider,
   IonLabel,
   IonList,
   IonModal,
@@ -310,6 +321,13 @@ import { useAuthStore } from '@/stores/auth';
 import { useRunStore } from '@/stores/run';
 import { getRoutes, getTrips, getVehicles } from '@/services/schedule';
 import { ApiError } from '@/services/apiClient';
+import {
+  routeCompactLabel,
+  tripCompactLabel,
+  tripDestination,
+  tripOrigin,
+  tripTime,
+} from '@/utils/labels';
 import type { CreateRunInput, Route, Trip, Vehicle } from '@/types/api';
 
 /** True when the OS asks apps to minimize motion. Used only to skip the
@@ -358,6 +376,11 @@ const manualVehicleId = ref('');
 // backend until onConfirmReview() runs. Built by onInitialize(), read by
 // onConfirmReview(); cleared on reset.
 const pendingInput = ref<CreateRunInput | null>(null);
+// The driver-facing labels for that same pending run — computed once here
+// (same source data as the review screen) and carried into createRun() as
+// its second argument, since tripId/shapeId alone can never recover the
+// destination later (readable-labels plan §3).
+const pendingLabels = ref<{ route: string; trip: string } | null>(null);
 
 const selectedRoute = computed(
   () => routes.value.find((r) => r.route_id === selectedRouteId.value) ?? null,
@@ -366,14 +389,45 @@ const selectedTrip = computed(
   () => trips.value.find((t) => t.trip_id === selectedTripId.value) ?? null,
 );
 
+/** One destination group in the trip picker (plan §2) — a sticky divider
+ * plus its trips sorted by departure time. */
+interface TripGroup {
+  headsign: string;
+  trips: Trip[];
+}
+
 /**
- * A GTFS trip_id in this feed embeds the departure time as its suffix
- * (e.g. "desde_artes_sin_milla_entresemana_08:35"). Prefer that HH:MM tail as
- * the readable label; fall back to the raw trip_id when it doesn't match.
+ * Groups `trips` by trip_headsign (the GTFS-defined destination) so the
+ * route's destinations no longer interleave across one flat, time-sorted
+ * list (up to 123 rows for L1 alone). Groups are sorted alphabetically by
+ * destination for a deterministic order; trips within a group by departure
+ * time. Replaces the old flat sort that lived in loadTrips().
  */
-function tripLabel(trip: Trip): string {
-  const match = trip.trip_id.match(/(\d{1,2}:\d{2})(?::\d{2})?$/);
-  return match ? match[1] : trip.trip_id;
+const tripGroups = computed<TripGroup[]>(() => {
+  const byHeadsign = new Map<string, Trip[]>();
+  for (const trip of trips.value) {
+    const headsign = tripDestination(trip);
+    const group = byHeadsign.get(headsign);
+    if (group) group.push(trip);
+    else byHeadsign.set(headsign, [trip]);
+  }
+  return Array.from(byHeadsign.entries())
+    .map(([headsign, groupTrips]) => ({
+      headsign,
+      trips: groupTrips.slice().sort((a, b) => tripTime(a).localeCompare(tripTime(b))),
+    }))
+    .sort((a, b) => a.headsign.localeCompare(b.headsign, 'es'));
+});
+
+function tripCountLabel(count: number): string {
+  return `${count} ${count === 1 ? 'viaje' : 'viajes'}`;
+}
+
+/** `route_color` is a bare hex triplet per GTFS ("00C0F3"); CSS needs the
+ * leading '#'. Falls back to a neutral grey when the feed omits it. */
+function routeDotColor(route: Route): string {
+  const color = typeof route.route_color === 'string' ? route.route_color.trim() : '';
+  return color ? `#${color.replace(/^#/, '')}` : 'var(--ion-color-medium)';
 }
 
 const vehicleId = computed(() =>
@@ -404,6 +458,7 @@ function resetState(): void {
   manualVehicle.value = false;
   manualVehicleId.value = '';
   pendingInput.value = null;
+  pendingLabels.value = null;
 }
 
 /** Load routes + vehicles on modal open. */
@@ -448,11 +503,9 @@ async function loadTrips(routeIdOverride?: string): Promise<void> {
   tripsError.value = null;
   tripsLoading.value = true;
   try {
-    const routeTrips = await getTrips(routeId);
-    // Sort by the departure time embedded in the trip label for readability.
-    trips.value = routeTrips
-      .slice()
-      .sort((a, b) => tripLabel(a).localeCompare(tripLabel(b)));
+    // Raw, unsorted — tripGroups (computed above) handles grouping by
+    // destination and sorting within each group by departure time.
+    trips.value = await getTrips(routeId);
   } catch (err) {
     tripsError.value = err;
   } finally {
@@ -479,10 +532,10 @@ function toConfirmError(err: unknown, fallbackStep: string): Error {
     // Surface the backend's actual reason (e.g. "Operator 'op-demo' is
     // already assigned to run …") instead of the opaque validation step.
     const detail = extractApiErrorDetail(err);
-    return new Error(detail ?? `Could not ${fallbackStep} (step "${err.step ?? 'unknown'}").`);
+    return new Error(detail ?? `No se pudo ${fallbackStep} (paso "${err.step ?? 'desconocido'}").`);
   }
   if (err instanceof Error) return err;
-  return new Error(`Could not ${fallbackStep}. Please try again.`);
+  return new Error(`No se pudo ${fallbackStep}. Intenta de nuevo.`);
 }
 
 /** Step 1: validate the selection and move to the review screen. Purely
@@ -491,15 +544,15 @@ function toConfirmError(err: unknown, fallbackStep: string): Error {
 function onInitialize(): void {
   const operatorId = authStore.session?.operatorId;
   if (!operatorId) {
-    confirmError.value = new Error('No operator session. Please log in again.');
+    confirmError.value = new Error('No hay sesión de operador. Inicia sesión de nuevo.');
     return;
   }
   if (!selectedRoute.value || !selectedTrip.value) {
-    confirmError.value = new Error('Missing run details. Please restart selection.');
+    confirmError.value = new Error('Faltan detalles del run. Reinicia la selección.');
     return;
   }
   if (!vehicleId.value) {
-    confirmError.value = new Error('A vehicle is required to start a run.');
+    confirmError.value = new Error('Se requiere un vehículo para iniciar el run.');
     return;
   }
 
@@ -515,6 +568,12 @@ function onInitialize(): void {
     shape_id: selectedTrip.value.shape_id,
     schedule_relationship: 'SCHEDULED',
   };
+  // Same label functions/data as the review screen below, computed once here
+  // so createRun() can carry them onto ActiveRun (readable-labels plan §3).
+  pendingLabels.value = {
+    route: routeCompactLabel(selectedRoute.value, routes.value),
+    trip: tripCompactLabel(selectedTrip.value, trips.value),
+  };
   phase.value = 'reviewing';
 }
 
@@ -524,13 +583,14 @@ function onInitialize(): void {
  * from here down is a purely decorative confirmation before closing the
  * sheet. */
 async function onConfirmReview(): Promise<void> {
-  if (!pendingInput.value) return;
+  if (!pendingInput.value || !pendingLabels.value) return;
 
   confirmError.value = null;
   busy.value = true;
   try {
-    await runStore.createRun(pendingInput.value);
+    await runStore.createRun(pendingInput.value, pendingLabels.value);
     pendingInput.value = null;
+    pendingLabels.value = null;
     justConfirmed.value = true;
     const pulseMs = prefersReducedMotion() ? 0 : 700;
     setTimeout(() => {
@@ -538,7 +598,7 @@ async function onConfirmReview(): Promise<void> {
       emit('dismissed');
     }, pulseMs);
   } catch (err) {
-    confirmError.value = toConfirmError(err, 'start the run');
+    confirmError.value = toConfirmError(err, 'iniciar el run');
     busy.value = false;
   }
 }
@@ -548,6 +608,7 @@ async function onConfirmReview(): Promise<void> {
 function onBackFromReview(): void {
   confirmError.value = null;
   pendingInput.value = null;
+  pendingLabels.value = null;
   phase.value = 'setup';
 }
 
@@ -583,17 +644,42 @@ function extractApiErrorDetail(err: ApiError): string | undefined {
 
 .step-title {
   margin: 0 0 var(--app-spacing-sm, 8px);
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: var(--app-font-size-lg);
+  font-weight: var(--app-font-weight-semibold);
 }
 
 .step-empty {
   color: var(--ion-color-medium);
-  font-size: 0.9rem;
+  font-size: var(--app-font-size-md);
 }
 
 .confirm-error {
   margin-top: 0;
+}
+
+/* Route picker: a small color-coded dot next to each route label, using the
+   feed's own route_color — free readability from real data (plan §2). */
+.route-option-label {
+  display: flex;
+  align-items: center;
+  gap: var(--app-spacing-sm, 8px);
+}
+
+.route-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Sticky destination-group headers in the trip picker (plan §2) — stay
+   visible while their group scrolls past, so a driver scanning the 123-row
+   L1 list always knows which destination the rows under the divider belong
+   to. */
+ion-item-divider {
+  --background: var(--ion-color-light, var(--ion-item-background));
+  font-size: var(--app-font-size-sm);
+  font-weight: var(--app-font-weight-medium);
 }
 
 .modal-body {

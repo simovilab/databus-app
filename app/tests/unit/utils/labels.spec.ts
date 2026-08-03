@@ -6,6 +6,7 @@ import {
   tripCompactLabel,
   tripDestination,
   tripOrigin,
+  tripStartingPoint,
   tripTime,
 } from '@/utils/labels';
 import type { Route, Trip } from '@/types/api';
@@ -170,6 +171,68 @@ describe('tripOrigin', () => {
   it('returns null when the origin token matches no known headsign', () => {
     const trip = makeTrip({ shape_id: 'desde_nowhere' });
     expect(tripOrigin(trip, l1Trips)).toBeNull();
+  });
+});
+
+describe('tripStartingPoint', () => {
+  it('is exactly tripOrigin for a desde_* trip', () => {
+    const trip = makeTrip({
+      trip_id: 'desde_artes_sin_milla_entresemana_06:20',
+      shape_id: 'desde_artes_sin_milla',
+      trip_headsign: 'Deportivas',
+    });
+    expect(tripStartingPoint(trip, l1Trips)).toBe('Artes Plásticas');
+  });
+
+  it('resolves the shared hub for a hacia_* trip (real L1: both desde_* trips end at "Deportivas")', () => {
+    const trip = makeTrip({
+      trip_id: 'hacia_educacion_entresemana_07:00',
+      shape_id: 'hacia_educacion',
+      trip_headsign: 'Educación',
+    });
+    expect(tripStartingPoint(trip, l1Trips)).toBe('Deportivas');
+  });
+
+  it('resolves the other hacia_* trip to the same hub, not its own headsign', () => {
+    const trip = makeTrip({
+      trip_id: 'hacia_artes_entresemana_07:15',
+      shape_id: 'hacia_artes',
+      trip_headsign: 'Artes Plásticas',
+    });
+    expect(tripStartingPoint(trip, l1Trips)).toBe('Deportivas');
+  });
+
+  it('falls back to the trip\'s own destination when the feed has no desde_* trips at all', () => {
+    const feed = [
+      makeTrip({ trip_id: 'hacia_a', shape_id: 'hacia_a', trip_headsign: 'A' }),
+      makeTrip({ trip_id: 'hacia_b', shape_id: 'hacia_b', trip_headsign: 'B' }),
+    ];
+    expect(tripStartingPoint(feed[0], feed)).toBe('A');
+  });
+
+  it('falls back to the trip\'s own destination when desde_* trips disagree on the hub', () => {
+    const feed = [
+      // Token 'artes' resolves against the 'Artes Plásticas' headsign supplied
+      // by the hacia_artes trip below; this trip's own destination is 'HubA'.
+      makeTrip({ trip_id: 'desde_artes_x', shape_id: 'desde_artes', trip_headsign: 'HubA' }),
+      makeTrip({
+        trip_id: 'hacia_artes_x',
+        shape_id: 'hacia_artes',
+        trip_headsign: 'Artes Plásticas',
+        direction_id: 1,
+      }),
+      // Token 'educacion' resolves against 'Educación' below; own destination
+      // is 'HubB' — a different hub than the first pair.
+      makeTrip({ trip_id: 'desde_educacion_x', shape_id: 'desde_educacion', trip_headsign: 'HubB' }),
+      makeTrip({
+        trip_id: 'hacia_educacion_x',
+        shape_id: 'hacia_educacion',
+        trip_headsign: 'Educación',
+        direction_id: 1,
+      }),
+      makeTrip({ trip_id: 'hacia_c', shape_id: 'hacia_c', trip_headsign: 'C', direction_id: 1 }),
+    ];
+    expect(tripStartingPoint(feed[4], feed)).toBe('C');
   });
 });
 

@@ -124,6 +124,14 @@ describe('Run flow — start, advance, end', () => {
   });
 
   it('creates a run, watches the state advance, and ends it', () => {
+    // Freeze "now" at 08:15 America/Costa_Rica (14:15 UTC — Costa Rica has no
+    // DST, fixed UTC-6). The trip picker windows trips to start 30 minutes
+    // before "now" (TripSetupModal.vue), and the fixture trip below departs
+    // at a fixed 08:00 — without a frozen clock this test would only pass
+    // when actually run within that same half hour. Restricted to ['Date']
+    // so real timers still drive the state-polling and confirm-pulse delay.
+    cy.clock(new Date('2024-06-01T14:15:00Z').getTime(), ['Date']);
+
     cy.visit('/');
     cy.seedAuth();
 
@@ -134,8 +142,11 @@ describe('Run flow — start, advance, end', () => {
     cy.wait(['@routes', '@vehicles']);
     cy.get('[data-testid="route-option"]').first().click();
 
-    // Picking a route loads its trips in place — no page change.
+    // Picking a route loads its trips in place — no page change. Starting
+    // point (destination) is picked first, then the trip picker windows to
+    // that direction's upcoming departures.
     cy.wait('@trips');
+    cy.get('[data-testid="starting-point-option"]').first().click();
     cy.get('[data-testid="trip-option"]').first().click();
 
     cy.get('[data-testid="vehicle-option"]').first().click();

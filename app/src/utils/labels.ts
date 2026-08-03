@@ -177,6 +177,34 @@ export function tripOrigin(trip: Trip, feed: Trip[]): string | null {
 }
 
 /**
+ * The trip's true starting point — where the driver/rider actually boards —
+ * as opposed to `tripDestination`, which is where the trip ends. `tripOrigin`
+ * covers `desde_*` shapes directly; a `hacia_*` shape carries no origin of
+ * its own, but real feeds pair every `hacia_X` return leg with a `desde_Y`
+ * outbound leg that shares one common destination — the hub `hacia_*` trips
+ * depart from (verified against the real bUCR L1 feed: both its desde_*
+ * trips terminate at "Deportivas", which is exactly where its hacia_* trips
+ * start). That hub is recovered here as the single destination shared by
+ * every trip in `feed` that DOES have a resolvable origin. Falls back to the
+ * trip's own destination (i.e. behaves like tripDestination) only when the
+ * feed doesn't follow that hub convention — no desde_* trips at all, or more
+ * than one distinct hub — since a wrong-but-real place name beats crashing
+ * or a blank starting-point picker.
+ */
+export function tripStartingPoint(trip: Trip, feed: Trip[]): string {
+  const origin = tripOrigin(trip, feed);
+  if (origin) return origin;
+
+  const hubs = new Set(
+    feed
+      .filter((t) => tripOrigin(t, feed) !== null)
+      .map((t) => tripDestination(t))
+      .filter((h) => h.length > 0),
+  );
+  return hubs.size === 1 ? [...hubs][0] : tripDestination(trip);
+}
+
+/**
  * "06:20 · desde Artes Plásticas → Deportivas", or "07:00 · hacia Educación"
  * when the trip has no recoverable origin (a hacia_* shape).
  *

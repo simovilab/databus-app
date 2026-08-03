@@ -96,9 +96,15 @@
         <!-- Trip (a GTFS trip carries its own direction + shape, so there is
              no separate direction picker — see services/schedule.ts). Loads
              as soon as a route is selected, without leaving this screen.
-             Grouped by destination (trip_headsign, the GTFS-defined
-             destination) so the 3 destinations don't interleave across a
-             123-row scroll — see src/utils/labels.ts and the plan's §2. -->
+             Two-tier: first the starting point — tripStartingPoint()
+             resolves a trip's true boarding location (src/utils/labels.ts);
+             a desde_* trip's own shape names it directly, but a hacia_* trip
+             carries no origin of its own, so it falls back to the shared hub
+             its desde_* siblings converge on — then, once picked, a flat,
+             time-ordered list of that direction's trips windowed to start 30
+             minutes before "now" (America/Costa_Rica), capped to a ~5-row
+             scrollable box (see .trip-list below) instead of the full day's
+             schedule. -->
         <section class="setup-section">
           <h2 class="step-title">2. Selecciona un viaje</h2>
           <p v-if="!selectedRouteId" class="step-empty">Selecciona una ruta primero.</p>
@@ -112,34 +118,72 @@
           />
           <template v-else>
             <p v-if="trips.length === 0" class="step-empty">No hay viajes programados para esta ruta hoy.</p>
-            <ion-list v-else>
-              <ion-radio-group
-                v-model="selectedTripId"
-                allow-empty-selection
-              >
-                <template v-for="group in tripGroups" :key="group.headsign">
-                  <ion-item-divider sticky>
-                    <ion-label>Hacia {{ group.headsign }} · {{ tripCountLabel(group.trips.length) }}</ion-label>
-                  </ion-item-divider>
+            <template v-else>
+              <h3 class="substep-title">Punto de partida</h3>
+              <ion-list>
+                <ion-radio-group
+                  v-model="selectedStartingPoint"
+                  allow-empty-selection
+                >
                   <ion-item
-                    v-for="trip in group.trips"
-                    :key="trip.trip_id"
-                    data-testid="trip-option"
+                    v-for="group in tripGroups"
+                    :key="group.startingPoint"
+                    data-testid="starting-point-option"
                   >
                     <ion-radio
-                      :value="trip.trip_id"
+                      :value="group.startingPoint"
                       label-placement="end"
                       justify="start"
                     >
-                      <ion-label>
-                        <h2 class="tnum">{{ tripTime(trip) }}</h2>
-                        <p v-if="tripOrigin(trip, trips)">desde {{ tripOrigin(trip, trips) }}</p>
-                      </ion-label>
+                      <ion-label>{{ group.startingPoint }}</ion-label>
                     </ion-radio>
                   </ion-item>
-                </template>
-              </ion-radio-group>
-            </ion-list>
+                </ion-radio-group>
+              </ion-list>
+
+              <template v-if="selectedStartingPoint">
+                <h3 class="substep-title">Hora de salida</h3>
+                <p v-if="upcomingTrips.length === 0" class="step-empty">No quedan viajes programados por hoy.</p>
+                <ion-list v-else class="trip-list">
+                  <ion-radio-group
+                    v-model="selectedTripId"
+                    allow-empty-selection
+                  >
+                    <ion-item
+                      v-for="trip in upcomingTrips"
+                      :key="trip.trip_id"
+                      data-testid="trip-option"
+                    >
+                      <ion-radio
+                        :value="trip.trip_id"
+                        label-placement="end"
+                        justify="start"
+                      >
+                        <ion-label>
+                          <h2 class="tnum">{{ tripTime(trip) }}</h2>
+                        </ion-label>
+                      </ion-radio>
+                    </ion-item>
+                  </ion-radio-group>
+                </ion-list>
+
+                <ion-item lines="none" class="schedule-relationship-item">
+                  <ion-select
+                    v-model="scheduleRelationship"
+                    label="Tipo de viaje"
+                    label-placement="stacked"
+                    interface="popover"
+                    data-testid="schedule-relationship-select"
+                  >
+                    <ion-select-option
+                      v-for="option in scheduleRelationshipOptions"
+                      :key="option"
+                      :value="option"
+                    >{{ option }}</ion-select-option>
+                  </ion-select>
+                </ion-item>
+              </template>
+            </template>
           </template>
         </section>
 
@@ -219,6 +263,12 @@
             <ion-label>
               <p>Viaje</p>
               <h2 class="tnum">{{ selectedTrip ? tripCompactLabel(selectedTrip, trips) : '' }}</h2>
+            </ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-label>
+              <p>Tipo de viaje</p>
+              <h2>{{ scheduleRelationship }}</h2>
             </ion-label>
           </ion-item>
           <ion-item lines="none">
@@ -302,12 +352,13 @@ import {
   IonIcon,
   IonInput,
   IonItem,
-  IonItemDivider,
   IonLabel,
   IonList,
   IonModal,
   IonRadio,
   IonRadioGroup,
+  IonSelect,
+  IonSelectOption,
   IonSpinner,
   IonTitle,
   IonToggle,
@@ -324,11 +375,10 @@ import { ApiError } from '@/services/apiClient';
 import {
   routeCompactLabel,
   tripCompactLabel,
-  tripDestination,
-  tripOrigin,
+  tripStartingPoint,
   tripTime,
 } from '@/utils/labels';
-import type { CreateRunInput, Route, Trip, Vehicle } from '@/types/api';
+import type { CreateRunInput, Route, ScheduleRelationship, Trip, Vehicle } from '@/types/api';
 
 /** True when the OS asks apps to minimize motion. Used only to skip the
  * purely decorative "run started" pulse delay below — createRun() has
@@ -366,8 +416,19 @@ const trips = ref<Trip[]>([]);
 const vehicles = ref<Vehicle[]>([]);
 
 const selectedRouteId = ref<string | null>(null);
+const selectedStartingPoint = ref<string | null>(null);
 const selectedTripId = ref<string | null>(null);
 const selectedVehicleId = ref<string | null>(null);
+
+const scheduleRelationshipOptions: ScheduleRelationship[] = [
+  'SCHEDULED',
+  'ADDED',
+  'UNSCHEDULED',
+  'CANCELED',
+  'DUPLICATED',
+  'DELETED',
+];
+const scheduleRelationship = ref<ScheduleRelationship>('SCHEDULED');
 
 const manualVehicle = ref(false);
 const manualVehicleId = ref('');
@@ -389,39 +450,68 @@ const selectedTrip = computed(
   () => trips.value.find((t) => t.trip_id === selectedTripId.value) ?? null,
 );
 
-/** One destination group in the trip picker (plan §2) — a sticky divider
- * plus its trips sorted by departure time. */
+/** One "starting point" option — trips grouped by tripStartingPoint() (see
+ * src/utils/labels.ts). Sorted alphabetically for a deterministic order. */
 interface TripGroup {
-  headsign: string;
+  startingPoint: string;
   trips: Trip[];
 }
 
-/**
- * Groups `trips` by trip_headsign (the GTFS-defined destination) so the
- * route's destinations no longer interleave across one flat, time-sorted
- * list (up to 123 rows for L1 alone). Groups are sorted alphabetically by
- * destination for a deterministic order; trips within a group by departure
- * time. Replaces the old flat sort that lived in loadTrips().
- */
 const tripGroups = computed<TripGroup[]>(() => {
-  const byHeadsign = new Map<string, Trip[]>();
+  const byStartingPoint = new Map<string, Trip[]>();
   for (const trip of trips.value) {
-    const headsign = tripDestination(trip);
-    const group = byHeadsign.get(headsign);
+    const startingPoint = tripStartingPoint(trip, trips.value);
+    const group = byStartingPoint.get(startingPoint);
     if (group) group.push(trip);
-    else byHeadsign.set(headsign, [trip]);
+    else byStartingPoint.set(startingPoint, [trip]);
   }
-  return Array.from(byHeadsign.entries())
-    .map(([headsign, groupTrips]) => ({
-      headsign,
-      trips: groupTrips.slice().sort((a, b) => tripTime(a).localeCompare(tripTime(b))),
-    }))
-    .sort((a, b) => a.headsign.localeCompare(b.headsign, 'es'));
+  return Array.from(byStartingPoint.entries())
+    .map(([startingPoint, groupTrips]) => ({ startingPoint, trips: groupTrips }))
+    .sort((a, b) => a.startingPoint.localeCompare(b.startingPoint, 'es'));
 });
 
-function tripCountLabel(count: number): string {
-  return `${count} ${count === 1 ? 'viaje' : 'viajes'}`;
+/**
+ * Minutes since midnight, "now", in America/Costa_Rica — independent of the
+ * device's own timezone. Intl.DateTimeFormat (rather than a fixed UTC-6
+ * offset) so this stays correct across any DST-like quirks in that zone.
+ */
+function costaRicaMinutesNow(): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Costa_Rica',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+  return hour * 60 + minute;
 }
+
+/** "06:10" → 370. Trips whose id carries no recognizable time (tripTime's
+ * fallback to the raw trip_id) sort last, never filtered out by the window
+ * below — better to show an unparseable trip than silently hide it. */
+function tripTimeMinutes(trip: Trip): number {
+  const match = tripTime(trip).match(/^(\d{2}):(\d{2})$/);
+  if (!match) return Infinity;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+/**
+ * The selected starting point's trips, flat and time-ordered, windowed to
+ * start 30 minutes before "now" (Costa Rica time) so a 123-row day's
+ * schedule collapses to the handful of trips actually relevant right now.
+ * Clamped at 0 rather than wrapping past midnight — a deliberate
+ * simplification, not a bug: the schedule doesn't run through midnight in
+ * practice. Empty until a starting point is chosen.
+ */
+const upcomingTrips = computed<Trip[]>(() => {
+  if (!selectedStartingPoint.value) return [];
+  const windowStart = Math.max(0, costaRicaMinutesNow() - 30);
+  return trips.value
+    .filter((trip) => tripStartingPoint(trip, trips.value) === selectedStartingPoint.value)
+    .filter((trip) => tripTimeMinutes(trip) >= windowStart)
+    .sort((a, b) => tripTimeMinutes(a) - tripTimeMinutes(b));
+});
 
 /** `route_color` is a bare hex triplet per GTFS ("00C0F3"); CSS needs the
  * leading '#'. Falls back to a neutral grey when the feed omits it. */
@@ -453,8 +543,10 @@ function resetState(): void {
   trips.value = [];
   vehicles.value = [];
   selectedRouteId.value = null;
+  selectedStartingPoint.value = null;
   selectedTripId.value = null;
   selectedVehicleId.value = null;
+  scheduleRelationship.value = 'SCHEDULED';
   manualVehicle.value = false;
   manualVehicleId.value = '';
   pendingInput.value = null;
@@ -492,9 +584,16 @@ async function loadInitial(): Promise<void> {
 /** Load trips for the selected route as soon as it's picked — the operator
  * never leaves this screen, so this just fills in section 2 in place. */
 watch(selectedRouteId, (routeId) => {
+  selectedStartingPoint.value = null;
   selectedTripId.value = null;
   trips.value = [];
   if (routeId) void loadTrips(routeId);
+});
+
+/** Picking a different starting point invalidates whatever trip was picked
+ * under the old one. */
+watch(selectedStartingPoint, () => {
+  selectedTripId.value = null;
 });
 
 async function loadTrips(routeIdOverride?: string): Promise<void> {
@@ -566,7 +665,7 @@ function onInitialize(): void {
     trip_id: selectedTrip.value.trip_id,
     direction_id: selectedTrip.value.direction_id,
     shape_id: selectedTrip.value.shape_id,
-    schedule_relationship: 'SCHEDULED',
+    schedule_relationship: scheduleRelationship.value,
   };
   // Same label functions/data as the review screen below, computed once here
   // so createRun() can carry them onto ActiveRun (readable-labels plan §3).
@@ -653,6 +752,16 @@ function extractApiErrorDetail(err: ApiError): string | undefined {
   font-size: var(--app-font-size-md);
 }
 
+/* The two sub-steps inside "2. Selecciona un viaje" — starting point, then
+   departure time — need a lighter heading than .step-title's numbered
+   sections. */
+.substep-title {
+  margin: var(--app-spacing-md, 16px) 0 var(--app-spacing-xs, 4px);
+  font-size: var(--app-font-size-sm);
+  font-weight: var(--app-font-weight-medium);
+  color: var(--ion-color-medium);
+}
+
 .confirm-error {
   margin-top: 0;
 }
@@ -672,14 +781,12 @@ function extractApiErrorDetail(err: ApiError): string | undefined {
   flex-shrink: 0;
 }
 
-/* Sticky destination-group headers in the trip picker (plan §2) — stay
-   visible while their group scrolls past, so a driver scanning the 123-row
-   L1 list always knows which destination the rows under the divider belong
-   to. */
-ion-item-divider {
-  --background: var(--ion-color-light, var(--ion-item-background));
-  font-size: var(--app-font-size-sm);
-  font-weight: var(--app-font-weight-medium);
+/* Trip picker: windowed to trips starting ~30min before now (see
+   upcomingTrips), capped to a ~5-row scrollable box instead of a full-page
+   list — later trips are still reachable by scrolling, not discarded. */
+.trip-list {
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .modal-body {

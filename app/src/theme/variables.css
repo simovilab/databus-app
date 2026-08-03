@@ -127,6 +127,29 @@
   --app-tint-warning: rgba(var(--ion-color-warning-rgb), 0.16);
   --app-tint-danger: rgba(var(--ion-color-danger-rgb), 0.12);
   --app-tint-medium: rgba(var(--ion-color-medium-rgb), 0.1);
+
+  /** ---- Typography ----
+   * Manrope Variable, self-hosted (see theme/font.css) — the only deliberate
+   * typeface in the app; everything else previously fell back to the
+   * platform default. --ion-font-family is Ionic's documented hook, so this
+   * one token retints every Ionic component automatically. */
+  --app-font-family:
+    'Manrope Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ion-font-family: var(--app-font-family);
+
+  /* A small deliberate scale, replacing the ad-hoc 0.85rem/0.9rem/1.05rem/3rem
+   * literals scattered across scoped styles. */
+  --app-font-size-xs: 0.75rem; /* captions, hints */
+  --app-font-size-sm: 0.8125rem; /* detail labels */
+  --app-font-size-md: 0.9375rem; /* body */
+  --app-font-size-lg: 1.0625rem; /* section titles */
+  --app-font-size-xl: 1.375rem; /* card titles */
+
+  --app-font-weight-normal: 400;
+  --app-font-weight-medium: 500;
+  --app-font-weight-semibold: 600;
+
+  --app-line-height-tight: 1.25;
 }
 
 /* ---- Card Stack: soft, elevated surfaces everywhere ----
@@ -151,6 +174,15 @@ ion-button {
 /* Slightly more generous line-height for body copy (principle 6). */
 p {
   line-height: var(--app-line-height-relaxed);
+}
+
+/* Tabular (monospaced-width) figures — applied to the trip-picker time
+   column, formatted date/times in history + run details, and vehicle
+   IDs/plates. Default proportional figures are what made the 123-row
+   HH:MM column in the trip picker not line up. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
 /* ---- Bottom-sheet modal chrome ----

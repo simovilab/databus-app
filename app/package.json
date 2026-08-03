@@ -19,6 +19,7 @@
     "@capacitor/keyboard": "8.0.5",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/status-bar": "8.0.2",
+    "@fontsource-variable/manrope": "^5.3.0",
     "@ionic/vue": "^8.0.0",
     "@ionic/vue-router": "^8.0.0",
     "capacitor-databus-telemetry": "file:plugins/capacitor-databus-telemetry",

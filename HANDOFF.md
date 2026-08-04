@@ -1,5 +1,13 @@
 # Handoff — databus-app HTTPS device-testing (Plan B)
 
+> **Status: Part A and Part B are done.** The VPS now runs a real `git clone` of
+> this repo (not an ad hoc copy) behind Traefik on `sslip.io`, serving the web
+> build over HTTPS. This document is kept as historical context for *why* those
+> decisions were made (identity, DNS, infra sizing) — for current deploy
+> mechanics, go straight to `deploy/VPS_HTTPS_TESTING.md`, which reflects the
+> real, now-verified process. The "Recommended next step" below is stale; treat
+> it as what Part A handed off to Part B, not as outstanding work.
+>
 > A fresh agent should read this first, then `DATABUS_INTEGRATION.md` (backend
 > contract + asks) and `deploy/VPS_HTTPS_TESTING.md` (the executable runbook).
 

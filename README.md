@@ -96,7 +96,12 @@ flowchart TD
 
 - **Inicio** — greeting + active-run card + recent-activity feed (last 3 runs).
 - **Runs** — `Activo` (current run or start-run CTA) / `Historial` (finished
-  runs, each opening a details modal with the live FSM timeline).
+  runs, each opening a details modal with the live FSM timeline). Starting a run
+  opens `TripSetupModal`: a single-screen form (route → starting point → trip →
+  vehicle) followed by a client-side-only review step — nothing is sent to the
+  backend until the operator taps "Confirmar run" on that review screen (see
+  [Trip & route labels](#trip--route-labels) and the Known issues note on
+  stuck `Initialized` runs below for why that review step exists).
 - **Mensajes** — placeholder; no messaging backend yet (badge is wired for when
   one exists).
 - **Usuario** — `Perfil` (institutional identity + edit modal + logout) /
@@ -138,6 +143,22 @@ full detail):
 - **One active run per operator.** The backend binds an operator/vehicle/trip to
   a run until it reaches a terminal state; a second create-run for the same
   operator is rejected. The app surfaces the backend's real reason.
+
+### <a id="trip--route-labels"></a>Trip & route labels
+
+Raw GTFS identifiers (`route_short_name`, `shape_id`, `trip_headsign`) aren't
+readable to a driver on their own — `src/utils/labels.ts` is the single place
+those become human-readable text (route short label + qualifier, trip time,
+true starting point recovered from `desde_*`/`hacia_*` shape-id conventions,
+and the combined "`HH:MM · desde X → Y`" trip label used across the trip
+picker, run progress, and history). Pure functions, degrade to the raw ID
+rather than throwing on a feed that doesn't follow the convention — covered by
+`tests/unit/utils/labels.spec.ts`. The trip picker in `TripSetupModal` also
+windows the trip list to upcoming departures (starting ~30 min before "now")
+instead of showing the full day's schedule.
+
+Typography (Manrope, self-hosted; tabular figures for times) lives in the
+theme layer alongside the color-palette system below.
 
 ### Telemetry seam (dev vs prod)
 
@@ -329,7 +350,7 @@ npm run build         # vue-tsc typecheck + vite build
 npm run test:e2e      # cypress (e2e) — needs the dev server running
 ```
 
-Current status: **lint clean · 90 unit tests · typecheck + build green.**
+Current status: **lint clean · 121 unit tests · typecheck + build green.**
 
 ### Testing the full run lifecycle
 
@@ -383,6 +404,8 @@ app/
       pwa.ts          # service-worker registration (web only; no-op on native)
       telemetry/      # TelemetryRuntime seam + web & native implementations
     theme/            # variables.css + palettes.ts + applyPalette.ts (theming)
+    utils/
+      labels.ts       # GTFS id → human-readable route/trip labels for drivers
     types/            # api.ts (wire types), domain.ts (app types)
     router/           # routes + auth guard
   public/
@@ -400,9 +423,9 @@ DATABUS_INTEGRATION.md# backend contract + open asks for the databus team
 
 ---
 
-## What's left to do
+## To-dos & known issues
 
-**App-side**
+**App-side to-dos**
 
 - [ ] **Resume active run on boot** — rehydrate `activeRun` from the backend
       (needs the "operator's current run" endpoint below).
@@ -423,11 +446,32 @@ DATABUS_INTEGRATION.md# backend contract + open asks for the databus team
 - [ ] A **run-list / run-history** endpoint (the DRF run ViewSet is commented
       out), so history isn't purely client-side.
 - [ ] **Cancel-from-Initialized** FSM transition (a run stuck in `Initialized`
-      cannot currently be cancelled).
+      cannot currently be cancelled) — see the known issue right below; this is
+      the fix that would make the app-side workaround unnecessary.
 - [ ] **Broker TLS trust chain + auth scheme** for the native prod transport,
       and a **staging broker host**.
 - [ ] Optionally, **CORS** for the web build so it can talk to the API without
       the dev proxy.
+
+### Known issues (bugs, not missing features)
+
+- **Backend: a stuck `Initialized` run permanently binds its operator/vehicle/trip.**
+  If `create-run` reaches `Initialized` but the run is then abandoned instead of
+  confirmed, the backend never releases the Redis binding — there's no
+  `cancel_run` transition from `Initialized` (only from `Confirmed`/`Tracking`),
+  so every later `create-run` for that operator 4xxs with "already assigned to
+  run `<id>`," permanently. Full detail, root cause, and the **verified** interim
+  unstick (`redis-cli DEL operator:<id>:current_run vehicle:<id>:current_run
+  trip:<id>:current_run` — `scripts/cleanup_redis.py` does **not** fix this,
+  despite what an earlier note here claimed) are in
+  [`deploy/DATABUS_INTEGRATION.md` §B4](./deploy/DATABUS_INTEGRATION.md). This is
+  a `databus` (backend) bug, not fixable from this repo — `TripSetupModal`'s
+  client-side-only review step exists specifically so the app never calls
+  `create-run` until the operator has truly committed, which avoids triggering it
+  in normal use.
+- **Dev server port drift across worktrees.** See the [Port note](#run-the-app)
+  above — a stale `vite` process (often in a different git worktree) silently
+  squats on `5173` and the next `npm run dev` moves to `5174`+ without warning.
 
 ---
 

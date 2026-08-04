@@ -1,7 +1,7 @@
 [project]
-name = "docs"
+name = "databus-app-docs"
 version = "0.1.0"
-description = "Add your description here"
+description = "Documentation for the Databús operator app (Ionic Vue + Capacitor)."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = []

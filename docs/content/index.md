@@ -1,173 +1,97 @@
 ---
-icon: lucide/rocket
+icon: lucide/smartphone
+hide:
+  - navigation
 ---
 
-# Get started
+# Databús App
 
-For full documentation visit [zensical.org](https://zensical.org/docs/).
+**`databus-app`** is the operator/on-board client for the **Databús** transit
+system (UCR / SIMOVI). Bus drivers and fleet operators use it to start and end
+runs, stream real-time GPS telemetry, and (later) receive operational messages
+and raise service alerts.
 
-## Commands
+The app is **two things at once**:
 
-* [`zensical new`][new] - Create a new project
-* [`zensical serve`][serve] - Start local web server
-* [`zensical build`][build] - Build your site
+- **A mobile UI** that talks to the Databús orchestrator over a REST API — the
+  low-frequency **"warm path"** (login, start/end run, lifecycle events).
+- **An MQTT telemetry publisher** that streams GPS fixes to the Databús
+  telemetry broker — the high-frequency **"hot path"** (position updates).
 
-  [new]: https://zensical.org/docs/usage/new/
-  [serve]: https://zensical.org/docs/usage/preview/
-  [build]: https://zensical.org/docs/usage/build/
+It has **no backend of its own** — every server-side concern lives in the
+sibling [`databus`](https://github.com/simovilab/databus) repository. See
+[System context](architecture/system-context.md) for how the pieces fit
+together.
 
-## Examples
+!!! note "This site vs the root README"
 
-### Admonitions
+    The repo-root `README.md`, `HANDOFF.md`, and `DATABUS_INTEGRATION.md` are
+    still the canonical source for fast-moving facts (test counts, open backend
+    asks). This site organizes and expands on them for a docs audience — where
+    they disagree, the root files win.
 
-> Go to [documentation](https://zensical.org/docs/authoring/admonitions/)
+## Start here
 
-!!! note
+<div class="grid cards" markdown>
 
-    This is a **note** admonition. Use it to provide helpful information.
+-   :lucide-lightbulb:{ .lg .middle } **Concepts**
 
-!!! warning
+    ---
 
-    This is a **warning** admonition. Be careful!
+    What the app is, the run lifecycle it drives, and the hot-path/warm-path
+    telemetry split.
 
-### Details
+    [:octicons-arrow-right-24: Concepts](concepts/index.md)
 
-> Go to [documentation](https://zensical.org/docs/authoring/admonitions/#collapsible-blocks)
+-   :lucide-network:{ .lg .middle } **Architecture**
 
-??? info "Click to expand for more info"
+    ---
 
-    This content is hidden until you click to expand it.
-    Great for FAQs or long explanations.
+    System context, screens & navigation, project layout, and the telemetry
+    seam between dev and native builds.
 
-## Code Blocks
+    [:octicons-arrow-right-24: Architecture](architecture/index.md)
 
-> Go to [documentation](https://zensical.org/docs/authoring/code-blocks/)
+-   :lucide-layout-panel-top:{ .lg .middle } **App behavior**
 
-``` python hl_lines="2" title="Code blocks"
-def greet(name):
-    print(f"Hello, {name}!") # (1)!
+    ---
 
-greet("Python")
-```
+    Trip setup and human-readable labels, theming & typography, the PWA, and
+    what gets persisted on-device.
 
-1.  > Go to [documentation](https://zensical.org/docs/authoring/code-blocks/#code-annotations)
+    [:octicons-arrow-right-24: App behavior](app-behavior/index.md)
 
-    Code annotations allow to attach notes to lines of code.
+-   :lucide-terminal:{ .lg .middle } **Development**
 
-Code can also be highlighted inline: `#!python print("Hello, Python!")`.
+    ---
 
-## Content tabs
+    Getting started, running the test suite, and the conventions this repo
+    follows.
 
-> Go to [documentation](https://zensical.org/docs/authoring/content-tabs/)
+    [:octicons-arrow-right-24: Development](development/index.md)
 
-=== "Python"
+-   :lucide-rocket:{ .lg .middle } **Deployment**
 
-    ``` python
-    print("Hello from Python!")
-    ```
+    ---
 
-=== "Rust"
+    Getting the web build onto a real device over HTTPS, and native
+    (Android/iOS) builds.
 
-    ``` rs
-    println!("Hello from Rust!");
-    ```
+    [:octicons-arrow-right-24: Deployment](deployment/index.md)
 
-## Diagrams
+-   :lucide-plug:{ .lg .middle } **Backend integration**
 
-> Go to [documentation](https://zensical.org/docs/authoring/diagrams/)
+    ---
 
-``` mermaid
-graph LR
-  A[Start] --> B{Error?};
-  B -->|Yes| C[Hmm...];
-  C --> D[Debug];
-  D --> B;
-  B ---->|No| E[Yay!];
-```
+    The contract this app relies on from `databus`, open asks, and known
+    issues (including ones that live in the backend, not here).
 
-## Footnotes
+    [:octicons-arrow-right-24: Backend integration](backend-integration/index.md)
 
-> Go to [documentation](https://zensical.org/docs/authoring/footnotes/)
+</div>
 
-Here's a sentence with a footnote.[^1]
+---
 
-Hover it, to see a tooltip.
-
-[^1]: This is the footnote.
-
-
-## Formatting
-
-> Go to [documentation](https://zensical.org/docs/authoring/formatting/)
-
-- ==This was marked (highlight)==
-- ^^This was inserted (underline)^^
-- ~~This was deleted (strikethrough)~~
-- H~2~O
-- A^T^A
-- ++ctrl+alt+del++
-
-## Icons, Emojis
-
-> Go to [documentation](https://zensical.org/docs/authoring/icons-emojis/)
-
-* :sparkles: `:sparkles:`
-* :rocket: `:rocket:`
-* :tada: `:tada:`
-* :memo: `:memo:`
-* :eyes: `:eyes:`
-
-## Maths
-
-> Go to [documentation](https://zensical.org/docs/authoring/math/)
-
-$$
-\cos x=\sum_{k=0}^{\infty}\frac{(-1)^k}{(2k)!}x^{2k}
-$$
-
-!!! warning "Needs configuration"
-    Note that MathJax is included via a `script` tag on this page and is not
-    configured in the generated default configuration to avoid including it
-    in a pages that do not need it. See the documentation for details on how
-    to configure it on all your pages if they are more Maths-heavy than these
-    simple starter pages.
-
-<script id="MathJax-script" src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
-<script>
-  window.MathJax = {
-    tex: {
-      inlineMath: [["\\(", "\\)"]],
-      displayMath: [["\\[", "\\]"]],
-      processEscapes: true,
-      processEnvironments: true
-    },
-    options: {
-      ignoreHtmlClass: ".*|",
-      processHtmlClass: "arithmatex"
-    }
-  };
-
-  document$.subscribe(() => {
-    MathJax.startup.output.clearCache()
-    MathJax.typesetClear()
-    MathJax.texReset()
-    MathJax.typesetPromise()
-  })
-</script>
-
-## Task Lists
-
-> Go to [documentation](https://zensical.org/docs/authoring/lists/#using-task-lists)
-
-* [x] Install Zensical
-* [x] Configure `zensical.toml`
-* [x] Write amazing documentation
-* [ ] Deploy anywhere
-
-## Tooltips
-
-> Go to [documentation](https://zensical.org/docs/authoring/tooltips/)
-
-[Hover me][example]
-
-  [example]: https://example.com "I'm a tooltip!"
+Databús is developed by the [SIMOVI Lab](https://simovilab.org) at the
+University of Costa Rica (UCR). Source:
+[github.com/simovilab/databus-app](https://github.com/simovilab/databus-app).

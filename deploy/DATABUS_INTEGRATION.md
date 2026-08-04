@@ -70,8 +70,23 @@ never advances therefore holds its Redis bindings forever.
 manifestation of **ask #3 ("Cancel-from-`Initialized` transition")** in the repo-root
 [`DATABUS_INTEGRATION.md`](../DATABUS_INTEGRATION.md).
 
-**Interim unstick (runtime only):** clear the stale binding with the databus repo's
-`scripts/cleanup_redis.py`.
+**Interim unstick (runtime only):** `scripts/cleanup_redis.py` does **not** work for
+this — verified against its source (`databus/scripts/cleanup_redis.py`): it only
+expires stale *vehicle telemetry feed* keys by age, and never touches
+`operator:<id>:current_run` / `vehicle:<id>:current_run` / `trip:<id>:current_run`.
+The only confirmed unstick is deleting those three Redis keys directly:
+
+```bash
+docker exec <state-container> redis-cli DEL \
+  operator:<id>:current_run vehicle:<id>:current_run trip:<id>:current_run
+```
+
+Safe on a dev stack; on a shared/prod Redis, confirm no other run legitimately holds
+one of those keys before deleting. Reproduced independently 2026-07-31 against the
+local `databus-dev-*` stack: POSTing `cancel_run` to a run stuck at `Initialized`
+returns 422 (`No valid transition for event 'cancel_run' from state 'Initialized'`),
+confirming the binding is genuinely permanent client-side with no retry or different
+event able to unstick it.
 
 ---
 

@@ -105,14 +105,23 @@ import BrandLogo from '@/components/ui/BrandLogo.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRunStore } from '@/stores/run';
 import { useRunHistoryStore } from '@/stores/runHistory';
+import { useSettingsStore } from '@/stores/settings';
 import type { RunState } from '@/types/domain';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const runStore = useRunStore();
 const runHistoryStore = useRunHistoryStore();
+const settingsStore = useSettingsStore();
 
-const firstName = computed(() => authStore.session?.firstName || 'operador');
+// Same priority as UserPage's fullName: the device-local override from the
+// profile tab wins, then the institutional first name from login, then a
+// generic fallback.
+const firstName = computed(() => {
+  const override = settingsStore.settings.displayName.trim();
+  if (override) return override;
+  return authStore.session?.firstName || 'operador';
+});
 const activeRun = computed(() => runStore.activeRun);
 const recentRuns = computed(() => runHistoryStore.entries);
 

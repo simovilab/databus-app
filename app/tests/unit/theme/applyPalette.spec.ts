@@ -40,7 +40,16 @@ describe('paletteToCssVars', () => {
   });
 
   it('derives shade darker and tint lighter than the base', () => {
-    const vars = paletteToCssVars(getPalette('ocean'));
+    // Inline palette (not one from the catalog) so this stays valid
+    // regardless of which palettes ship in PALETTES.
+    const p: Palette = {
+      id: 't',
+      name: 'T',
+      primary: '#0a84ff',
+      secondary: '#000000',
+      tertiary: '#333333',
+    };
+    const vars = paletteToCssVars(p);
     // #0a84ff → shade ≈ *0.88, tint ≈ 10% toward white
     expect(vars['--ion-color-primary-shade']).toBe('#0974e0');
     expect(vars['--ion-color-primary-tint']).toBe('#2390ff');

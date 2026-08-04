@@ -45,33 +45,6 @@ export const PALETTES: readonly Palette[] = [
     backgroundDark: '#121412',
   },
   {
-    id: 'ocean',
-    name: 'Océano',
-    primary: '#0a84ff',
-    secondary: '#0b1f33',
-    tertiary: '#30c8c9',
-    background: '#eef4fb',
-    backgroundDark: '#0a1420',
-  },
-  {
-    id: 'sunset',
-    name: 'Atardecer',
-    primary: '#ff6b35',
-    secondary: '#2b1b2f',
-    tertiary: '#ffb703',
-    background: '#fbf1ec',
-    backgroundDark: '#1c1013',
-  },
-  {
-    id: 'grape',
-    name: 'Uva',
-    primary: '#7b5cff',
-    secondary: '#211a33',
-    tertiary: '#e5484d',
-    background: '#f3f0fb',
-    backgroundDark: '#14101f',
-  },
-  {
     id: 'forest',
     name: 'Bosque',
     primary: '#2e7d32',
@@ -81,22 +54,67 @@ export const PALETTES: readonly Palette[] = [
     backgroundDark: '#0d1710',
   },
   {
-    id: 'breeze',
-    name: 'Brisa',
-    primary: '#c0ded9', // light mint/teal
-    secondary: '#3b3a30', // dark charcoal
-    tertiary: '#b2c2bf', // dusty teal
-    background: '#eaece5',
-    backgroundDark: '#1b1b17',
+    id: 'storm',
+    name: 'Tormenta',
+    primary: '#4b6864',
+    secondary: '#4b4f68',
+    tertiary: '#4b5e68',
+    background: '#eff2f1', // gris claro perlado/verdoso
+    backgroundDark: '#121415', // gris oscuro casi negro, ligeramente frío
   },
   {
-    id: 'steel',
-    name: 'Acero',
-    primary: '#66757F', // slate blue
-    secondary: '#292F33', // dark slate
-    tertiary: '#CCD6DD', // light slate blue
-    background: '#E1E8ED',
-    backgroundDark: '#14171a',
+    id: 'terracota',
+    name: 'Terracota',
+    primary: '#b96b49', // arcilla cálida
+    secondary: '#2b1f1a', // espresso profundo
+    tertiary: '#8fa38b', // salvia — pareja complementaria clásica
+    background: '#f6efe8',
+    backgroundDark: '#17120e',
+  },
+  {
+    id: 'pizarra',
+    name: 'Pizarra',
+    primary: '#5b7a99', // azul-gris "slate" contenido
+    secondary: '#171b20',
+    tertiary: '#a7c4bc', // acento salvia-verdoso, discreto
+    background: '#eef1f3',
+    backgroundDark: '#101214',
+  },
+  {
+    id: 'esmeralda',
+    name: 'Esmeralda',
+    primary: '#0e8c6b', // verde-azulado tipo piedra preciosa
+    secondary: '#0c1f1a',
+    tertiary: '#f2a65a', // ámbar cálido, complementario
+    background: '#eef6f2',
+    backgroundDark: '#0a1512',
+  },
+  {
+    id: 'bruma',
+    name: 'Bruma',
+    primary: '#557693', // azul empolvado — versión desaturada de un azul eléctrico
+    secondary: '#171b20',
+    tertiary: '#b7a8b0', // susurro malva
+    background: '#eef1f2',
+    backgroundDark: '#0f1214',
+  },
+  {
+    id: 'musgo',
+    name: 'Musgo',
+    primary: '#766f4d', // oliva apagado, a medio camino entre Bosque y Salvia
+    secondary: '#1c1c14',
+    tertiary: '#c8b892', // sand cálido
+    background: '#f4f2ea',
+    backgroundDark: '#131209',
+  },
+  {
+    id: 'ceniza',
+    name: 'Ceniza',
+    primary: '#7d7973', // casi monocromo — el más silencioso del set
+    secondary: '#181715',
+    tertiary: '#c99a92', // susurro de rosa viejo
+    background: '#f3f1ee',
+    backgroundDark: '#121110',
   },
   {
     id: 'sage',
@@ -106,15 +124,6 @@ export const PALETTES: readonly Palette[] = [
     tertiary: '#e3e0cc', // warm beige
     background: '#f0f0f0',
     backgroundDark: '#181a18',
-  },
-  {
-    id: 'storm',
-    name: 'Tormenta',
-    primary: '#4B6864', 
-    secondary: '#4B4F68', 
-    tertiary: '#4B5E68', 
-    background: '#eff2f1', // Tono gris claro perlado/verdoso
-    backgroundDark: '#121415', // Tono gris oscuro casi negro, ligeramente frío
   },
 ];
 

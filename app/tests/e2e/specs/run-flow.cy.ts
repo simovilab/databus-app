@@ -171,12 +171,13 @@ describe('Run flow — start, advance, end', () => {
       event: 'run_confirmed_by_operator',
     });
 
-    // RunProgress shows the confirmed state (from the confirm response).
-    cy.get('[data-testid="run-state-badge"]').should('contain', 'Confirmed');
+    // RunProgress shows the confirmed state (from the confirm response),
+    // translated to Spanish for display (translateRunState).
+    cy.get('[data-testid="run-state-badge"]').should('contain', 'Confirmado');
 
     // Polled /state/ advances the lifecycle on its own (the proof point).
-    cy.get('[data-testid="run-state-badge"]').should('contain', 'Tracking');
-    cy.get('[data-testid="run-state-badge"]').should('contain', 'In Progress');
+    cy.get('[data-testid="run-state-badge"]').should('contain', 'Rastreando');
+    cy.get('[data-testid="run-state-badge"]').should('contain', 'En progreso');
 
     // --- End run: the run is In Progress, so the operator's manual end is
     //     run_interrupted (with actor_role) → terminal Interrupted state ---
@@ -185,7 +186,7 @@ describe('Run flow — start, advance, end', () => {
       event: 'run_interrupted',
       details: { actor_role: 'operator' },
     });
-    cy.get('[data-testid="run-state-badge"]').should('contain', 'Interrupted');
+    cy.get('[data-testid="run-state-badge"]').should('contain', 'Interrumpido');
     cy.get('[data-testid="run-terminal-note"]').should('be.visible');
   });
 });

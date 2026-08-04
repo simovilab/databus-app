@@ -22,15 +22,15 @@
           detail="false"
           class="home-card"
         >
-          <ion-card-header class="home-run__header" @click="goToRuns">
+          <ion-card-header class="home-run__header" @click="goToRuns('active')">
             <ion-card-title>Run en curso</ion-card-title>
             <ion-card-subtitle>{{ activeRun.routeLabel }} · {{ activeRun.tripLabel }}</ion-card-subtitle>
           </ion-card-header>
-          <ion-card-content @click="goToRuns">
+          <ion-card-content @click="goToRuns('active')">
             <Transition name="state-pop" mode="out-in">
               <ion-chip :key="activeRun.state" :color="stateColor" outline>
                 <ion-icon :icon="radioButtonOn" />
-                <ion-label>{{ activeRun.state }}</ion-label>
+                <ion-label>{{ translateRunState(activeRun.state) }}</ion-label>
               </ion-chip>
             </Transition>
             <p class="home-run__hint">Toca para ver el progreso del run.</p>
@@ -60,13 +60,13 @@
               fill="clear"
               size="small"
               data-testid="home-see-more"
-              @click="goToRuns"
+              @click="goToRuns('history')"
             >Ver más</ion-button>
           </div>
           <run-history-list
             :entries="recentRuns"
             :max="3"
-            @select="goToRuns"
+            @select="goToRuns('history')"
           />
         </ion-card-content>
       </ion-card>
@@ -106,6 +106,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useRunStore } from '@/stores/run';
 import { useRunHistoryStore } from '@/stores/runHistory';
 import { useSettingsStore } from '@/stores/settings';
+import { translateRunState } from '@/utils/runStateLabels';
 import type { RunState } from '@/types/domain';
 
 const router = useRouter();
@@ -134,8 +135,8 @@ const stateColor = computed<'success' | 'warning' | 'medium'>(() => {
   return 'medium';
 });
 
-function goToRuns(): void {
-  router.push('/tabs/runs');
+function goToRuns(segment: 'active' | 'history'): void {
+  router.push({ path: '/tabs/runs', query: { segment } });
 }
 
 // "Iniciar un run" only appears when there's no active run — skip the Runs

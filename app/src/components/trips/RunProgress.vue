@@ -8,7 +8,7 @@
               :key="run?.state ?? 'none'"
               :color="stateColor"
               data-testid="run-state-badge"
-            >{{ run?.state ?? '—' }}</ion-badge>
+            >{{ run?.state ? translateRunState(run.state) : '—' }}</ion-badge>
           </Transition>
         </ion-card-title>
       </ion-card-header>
@@ -109,6 +109,7 @@ import {
 import { checkmarkCircle, stopCircleOutline } from 'ionicons/icons';
 import { computed, onUnmounted, ref } from 'vue';
 import { useRunStore } from '@/stores/run';
+import { translateRunState } from '@/utils/runStateLabels';
 import type { RunState } from '@/types/domain';
 
 /** True when the OS asks apps to minimize motion. Used to skip the purely

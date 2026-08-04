@@ -138,6 +138,12 @@ onIonViewWillEnter(() => {
     segment.value = 'active';
     if (!hasActiveRun.value) setupOpen.value = true;
     void router.replace({ path: '/tabs/runs' });
+  } else if (route.query.segment === 'active' || route.query.segment === 'history') {
+    // Home's active-run card and recent-activity feed link in with
+    // ?segment=active|history so they land on the right tab instead of
+    // always defaulting to Activo.
+    segment.value = route.query.segment;
+    void router.replace({ path: '/tabs/runs' });
   }
 });
 watch(segment, (value) => {

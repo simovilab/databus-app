@@ -21,7 +21,7 @@
           <h2>{{ entryRouteLabel(entry) }} · {{ entryTripLabel(entry) }}</h2>
           <p class="tnum">{{ formatDateTime(entry.endedAt) }}</p>
         </ion-label>
-        <ion-badge slot="end" :color="stateColor(entry.finalState)">{{ entry.finalState }}</ion-badge>
+        <ion-badge slot="end" :color="stateColor(entry.finalState)">{{ translateRunState(entry.finalState) }}</ion-badge>
       </ion-item>
     </ion-list>
   </div>
@@ -36,6 +36,7 @@ import { IonBadge, IonItem, IonLabel, IonList } from '@ionic/vue';
 import { timeOutline } from 'ionicons/icons';
 import { computed } from 'vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
+import { translateRunState } from '@/utils/runStateLabels';
 import type { RunHistoryEntry, RunState } from '@/types/domain';
 
 const props = withDefaults(

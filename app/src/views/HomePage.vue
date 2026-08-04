@@ -112,7 +112,7 @@ const authStore = useAuthStore();
 const runStore = useRunStore();
 const runHistoryStore = useRunHistoryStore();
 
-const firstName = computed(() => authStore.session?.firstName ?? 'operador');
+const firstName = computed(() => authStore.session?.firstName || 'operador');
 const activeRun = computed(() => runStore.activeRun);
 const recentRuns = computed(() => runHistoryStore.entries);
 

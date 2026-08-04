@@ -19,7 +19,7 @@
         <ion-list lines="full">
           <ion-item>
             <ion-label slot="start" class="detail-label">Estado final</ion-label>
-            <ion-badge slot="end" :color="stateColor(entry.finalState)">{{ entry.finalState }}</ion-badge>
+            <ion-badge slot="end" :color="stateColor(entry.finalState)">{{ translateRunState(entry.finalState) }}</ion-badge>
           </ion-item>
           <ion-item>
             <ion-label slot="start" class="detail-label">Ruta</ion-label>
@@ -47,24 +47,33 @@
           </ion-item>
         </ion-list>
 
-        <h2 class="section-title">Bitácora de estados</h2>
-        <app-loading v-if="loading" message="Cargando bitácora…" />
-        <app-error
-          v-else-if="error"
-          :error="error"
-          fallback-message="No se pudo cargar la bitácora del run."
-          retry-label="Reintentar"
-          @retry="loadTimeline"
-        />
-        <ion-list v-else-if="transitions.length" lines="full">
-          <ion-item v-for="(t, i) in transitions" :key="i" data-testid="timeline-row">
-            <ion-label>
-              <h3>{{ t.from_state }} → {{ t.to_state }}</h3>
-              <p>{{ t.event }} · {{ formatDateTime(t.timestamp) }}</p>
-            </ion-label>
-          </ion-item>
-        </ion-list>
-        <p v-else class="detail-empty">Sin transiciones registradas.</p>
+        <ion-button
+          fill="outline"
+          expand="block"
+          data-testid="toggle-timeline"
+          @click="timelineOpen = !timelineOpen"
+        >{{ timelineOpen ? 'Ocultar bitácora de estados' : 'Ver bitácora de estados' }}</ion-button>
+
+        <template v-if="timelineOpen">
+          <h2 class="section-title">Bitácora de estados</h2>
+          <app-loading v-if="loading" message="Cargando bitácora…" />
+          <app-error
+            v-else-if="error"
+            :error="error"
+            fallback-message="No se pudo cargar la bitácora del run."
+            retry-label="Reintentar"
+            @retry="loadTimeline"
+          />
+          <ion-list v-else-if="transitions.length" lines="full">
+            <ion-item v-for="(t, i) in transitions" :key="i" data-testid="timeline-row">
+              <ion-label>
+                <h3>{{ translateRunState(t.from_state) }} → {{ translateRunState(t.to_state) }}</h3>
+                <p>{{ t.event }} · {{ formatDateTime(t.timestamp) }}</p>
+              </ion-label>
+            </ion-item>
+          </ion-list>
+          <p v-else class="detail-empty">Sin transiciones registradas.</p>
+        </template>
       </template>
     </ion-content>
   </ion-modal>
@@ -90,22 +99,32 @@ import { ref, watch } from 'vue';
 import AppError from '@/components/ui/AppError.vue';
 import AppLoading from '@/components/ui/AppLoading.vue';
 import { getRunHistory } from '@/services/schedule';
+import { translateRunState } from '@/utils/runStateLabels';
 import type { RunHistoryTransition } from '@/types/api';
 import type { RunHistoryEntry, RunState } from '@/types/domain';
 
 const props = defineProps<{ isOpen: boolean; entry: RunHistoryEntry | null }>();
 const emit = defineEmits<{ (e: 'dismissed'): void }>();
 
+const timelineOpen = ref(false);
 const loading = ref(false);
 const error = ref<unknown>(null);
 const transitions = ref<RunHistoryTransition[]>([]);
 
+// Bitácora de estados is collapsed by default (only loaded once the operator
+// asks to see it) and resets whenever a new entry is opened.
 watch(
   () => [props.isOpen, props.entry?.runId],
-  ([open]) => {
-    if (open && props.entry) void loadTimeline();
+  () => {
+    timelineOpen.value = false;
+    transitions.value = [];
+    error.value = null;
   },
 );
+
+watch(timelineOpen, (open) => {
+  if (open && props.entry) void loadTimeline();
+});
 
 async function loadTimeline(): Promise<void> {
   if (!props.entry) return;

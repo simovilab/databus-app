@@ -13,7 +13,7 @@
       </section>
 
       <section v-if="activeRun" class="home-run">
-        <ion-card button detail="false" @click="goToRuns">
+        <ion-card button detail="false" @click="goToRuns('active')">
           <ion-card-header>
             <ion-card-title>Run en curso</ion-card-title>
             <ion-card-subtitle>{{ activeRun.routeId }} · {{ activeRun.tripId }}</ion-card-subtitle>
@@ -21,7 +21,7 @@
           <ion-card-content>
             <ion-chip :color="stateColor" outline>
               <ion-icon :icon="radioButtonOn" />
-              <ion-label>{{ activeRun.state }}</ion-label>
+              <ion-label>{{ translateRunState(activeRun.state) }}</ion-label>
             </ion-chip>
             <p class="home-run__hint">Toca para ver el progreso del run.</p>
           </ion-card-content>
@@ -35,7 +35,7 @@
           :icon="busOutline"
         >
           <template #action>
-            <ion-button @click="goToRuns" fill="outline">Iniciar un run</ion-button>
+            <ion-button @click="goToRuns('active')" fill="outline">Iniciar un run</ion-button>
           </template>
         </EmptyState>
       </section>
@@ -47,13 +47,13 @@
             fill="clear"
             size="small"
             data-testid="home-see-more"
-            @click="goToRuns"
+            @click="goToRuns('history')"
           >Ver más</ion-button>
         </div>
         <run-history-list
           :entries="recentRuns"
           :max="3"
-          @select="goToRuns"
+          @select="goToRuns('history')"
         />
       </section>
     </ion-content>
@@ -91,6 +91,7 @@ import BrandLogo from '@/components/ui/BrandLogo.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRunStore } from '@/stores/run';
 import { useRunHistoryStore } from '@/stores/runHistory';
+import { translateRunState } from '@/utils/runStateLabels';
 import type { RunState } from '@/types/domain';
 
 const router = useRouter();
@@ -111,8 +112,8 @@ const stateColor = computed<'success' | 'warning' | 'medium'>(() => {
   return 'medium';
 });
 
-function goToRuns(): void {
-  router.push('/tabs/runs');
+function goToRuns(segment: 'active' | 'history'): void {
+  router.push({ path: '/tabs/runs', query: { segment } });
 }
 </script>
 

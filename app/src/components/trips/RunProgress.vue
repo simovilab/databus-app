@@ -6,7 +6,7 @@
           <ion-badge
             :color="stateColor"
             data-testid="run-state-badge"
-          >{{ run?.state ?? '—' }}</ion-badge>
+          >{{ run?.state ? translateRunState(run.state) : '—' }}</ion-badge>
         </ion-card-title>
       </ion-card-header>
       <ion-card-content>
@@ -100,6 +100,7 @@ import {
 import { stopCircleOutline } from 'ionicons/icons';
 import { computed, onUnmounted, ref } from 'vue';
 import { useRunStore } from '@/stores/run';
+import { translateRunState } from '@/utils/runStateLabels';
 import type { RunState } from '@/types/domain';
 
 const POLL_INTERVAL_MS = 5000;
@@ -147,17 +148,17 @@ const lastFixText = computed(() => {
 const telemetryLabel = computed(() => {
   switch (telemetry.value.status.value) {
     case 'streaming':
-      return 'Streaming';
+      return 'Transmitiendo';
     case 'buffering':
-      return 'Buffering';
+      return 'En búfer';
     case 'starting':
-      return 'Connecting…';
+      return 'Conectando…';
     case 'unavailable':
-      return 'Unavailable';
+      return 'No disponible';
     case 'error':
-      return 'Not connected';
+      return 'Sin conexión';
     default:
-      return 'Not connected';
+      return 'Sin conexión';
   }
 });
 

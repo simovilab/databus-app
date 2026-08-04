@@ -78,6 +78,7 @@ import {
   onIonViewWillEnter,
 } from '@ionic/vue';
 import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import RunProgress from '@/components/trips/RunProgress.vue';
 import TripSetupModal from '@/components/trips/TripSetupModal.vue';
@@ -87,10 +88,15 @@ import { useRunStore } from '@/stores/run';
 import { useRunHistoryStore } from '@/stores/runHistory';
 import type { RunHistoryEntry } from '@/types/domain';
 
+const route = useRoute();
 const runStore = useRunStore();
 const historyStore = useRunHistoryStore();
 
-const segment = ref<'active' | 'history'>('active');
+function segmentFromQuery(): 'active' | 'history' {
+  return route.query.segment === 'history' ? 'history' : 'active';
+}
+
+const segment = ref<'active' | 'history'>(segmentFromQuery());
 const setupOpen = ref(false);
 const detailsOpen = ref(false);
 const selectedEntry = ref<RunHistoryEntry | null>(null);
@@ -116,4 +122,15 @@ onIonViewWillEnter(() => {
 watch(segment, (value) => {
   if (value === 'history') void historyStore.reconcile();
 });
+
+// Home links in with ?segment=active|history (e.g. tapping the active-run
+// card vs. "Ver más" on recent activity). RunsPage's instance stays mounted
+// across tab switches, so a plain initial ref read isn't enough — re-sync
+// whenever the query changes.
+watch(
+  () => route.query.segment,
+  () => {
+    segment.value = segmentFromQuery();
+  },
+);
 </script>

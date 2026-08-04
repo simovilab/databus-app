@@ -45,7 +45,7 @@
               :icon="busOutline"
             >
               <template #action>
-                <ion-button @click="goToRuns" fill="outline">Iniciar un run</ion-button>
+                <ion-button @click="startRun" fill="outline">Iniciar un run</ion-button>
               </template>
             </EmptyState>
           </ion-card-content>
@@ -127,6 +127,13 @@ const stateColor = computed<'success' | 'warning' | 'medium'>(() => {
 
 function goToRuns(): void {
   router.push('/tabs/runs');
+}
+
+// "Iniciar un run" only appears when there's no active run — skip the Runs
+// tab's last-viewed segment (Activo/Historial) and go straight to the setup
+// form. The `start=1` query flag is read by RunsPage on every view-enter.
+function startRun(): void {
+  router.push('/tabs/runs?start=1');
 }
 </script>
 

@@ -84,6 +84,7 @@ import {
 } from '@ionic/vue';
 import type { RefresherCustomEvent } from '@ionic/vue';
 import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import RunProgress from '@/components/trips/RunProgress.vue';
 import TripSetupModal from '@/components/trips/TripSetupModal.vue';
@@ -93,6 +94,8 @@ import { useRunStore } from '@/stores/run';
 import { useRunHistoryStore } from '@/stores/runHistory';
 import type { RunHistoryEntry } from '@/types/domain';
 
+const route = useRoute();
+const router = useRouter();
 const runStore = useRunStore();
 const historyStore = useRunHistoryStore();
 
@@ -126,6 +129,16 @@ async function onRefreshHistory(event: RefresherCustomEvent): Promise<void> {
 // shown and whenever the operator opens the Historial segment.
 onIonViewWillEnter(() => {
   void historyStore.reconcile();
+
+  // Home's "Iniciar un run" CTA appends ?start=1 to jump straight to the
+  // setup form, bypassing whatever segment (Activo/Historial) was last
+  // active — the view is kept alive by the tab outlet, so this must be
+  // re-checked on every enter, not just on mount.
+  if (route.query.start === '1') {
+    segment.value = 'active';
+    if (!hasActiveRun.value) setupOpen.value = true;
+    void router.replace({ path: '/tabs/runs' });
+  }
 });
 watch(segment, (value) => {
   if (value === 'history') void historyStore.reconcile();

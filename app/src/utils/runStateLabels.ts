@@ -1,6 +1,7 @@
 // Spanish display labels for run lifecycle states. The app's copy is Spanish
-// throughout, but "run" itself is kept in English by convention (see
-// HomePage.vue, RunsPage.vue) — only the state values are translated.
+// throughout, and "run" is rendered as "carrera" in user-facing text — only
+// the RunState values below (the backend's FSM state names) stay in English,
+// since they are internal identifiers, not display text.
 import type { RunState } from '@/types/domain';
 
 const RUN_STATE_LABELS_ES: Record<RunState, string> = {

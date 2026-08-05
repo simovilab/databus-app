@@ -23,7 +23,7 @@ import { computed } from 'vue';
 
 const props = withDefaults(
   defineProps<{
-    /** Short heading, e.g. "No active run". */
+    /** Short heading, e.g. "Sin carrera activa". */
     title: string;
     /** Optional supporting copy. */
     message?: string;

@@ -10,7 +10,7 @@
         <ion-card-content class="home-greeting">
           <BrandLogo variant="auto" height="34px" class="home-greeting__logo" />
           <h1 class="home-greeting__heading">Hola, {{ firstName }}</h1>
-          <p class="home-greeting__sub">¿Qué harás hoy?</p>
+          <p class="home-greeting__sub">Esta es la aplicación de gestión de viajes de transporte público para operadores</p>
         </ion-card-content>
       </ion-card>
 
@@ -23,7 +23,7 @@
           class="home-card"
         >
           <ion-card-header class="home-run__header" @click="goToRuns('active')">
-            <ion-card-title>Run en curso</ion-card-title>
+            <ion-card-title>Carrera en curso</ion-card-title>
             <ion-card-subtitle>{{ activeRun.routeLabel }} · {{ activeRun.tripLabel }}</ion-card-subtitle>
           </ion-card-header>
           <ion-card-content @click="goToRuns('active')">
@@ -33,19 +33,19 @@
                 <ion-label>{{ translateRunState(activeRun.state) }}</ion-label>
               </ion-chip>
             </Transition>
-            <p class="home-run__hint">Toca para ver el progreso del run.</p>
+            <p class="home-run__hint">Toque para ver el progreso de la carrera.</p>
           </ion-card-content>
         </ion-card>
 
         <ion-card v-else key="empty" class="home-card home-card--empty">
           <ion-card-content>
             <EmptyState
-              title="Sin run activo"
-              message="Cuando quieras, inicia un run desde la pestaña Runs y empezamos a transmitir tu posición."
+              title="Sin carrera activa"
+              message="Cuando quiera, inicie una carrera desde la pestaña Carreras y empezamos a transmitir su posición."
               :icon="busOutline"
             >
               <template #action>
-                <ion-button @click="startRun" fill="outline">Iniciar un run</ion-button>
+                <ion-button @click="startRun" fill="outline">Iniciar una carrera</ion-button>
               </template>
             </EmptyState>
           </ion-card-content>
@@ -70,16 +70,18 @@
           />
         </ion-card-content>
       </ion-card>
+
+      <HowItWorksCard />
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 // Home (master-plan §2.1 row 3). Greets the operator by first name and shows
-// either a compact active-run status card (linking to the Trips tab) or an
-// `<EmptyState>` prompting them to start a run. This page is intentionally
-// minimal — the run UI itself belongs to Agent A4. It only *reads* from the
-// auth and run stores; it never mutates them.
+// either a compact active-carrera status card (linking to the Trips tab) or
+// an `<EmptyState>` prompting them to start a carrera. This page is
+// intentionally minimal — the run UI itself belongs to Agent A4. It only
+// *reads* from the auth and run stores; it never mutates them.
 import {
   IonButton,
   IonCard,
@@ -102,6 +104,7 @@ import { useRouter } from 'vue-router';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import RunHistoryList from '@/components/runs/RunHistoryList.vue';
 import BrandLogo from '@/components/ui/BrandLogo.vue';
+import HowItWorksCard from '@/components/ui/HowItWorksCard.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRunStore } from '@/stores/run';
 import { useRunHistoryStore } from '@/stores/runHistory';
@@ -139,9 +142,10 @@ function goToRuns(segment: 'active' | 'history'): void {
   router.push({ path: '/tabs/runs', query: { segment } });
 }
 
-// "Iniciar un run" only appears when there's no active run — skip the Runs
-// tab's last-viewed segment (Activo/Historial) and go straight to the setup
-// form. The `start=1` query flag is read by RunsPage on every view-enter.
+// "Iniciar una carrera" only appears when there's no active carrera — skip
+// the Carreras tab's last-viewed segment (Activo/Historial) and go straight
+// to the setup form. The `start=1` query flag is read by RunsPage on every
+// view-enter.
 function startRun(): void {
   router.push('/tabs/runs?start=1');
 }
@@ -149,11 +153,14 @@ function startRun(): void {
 
 <style scoped>
 /* Card Stack principle 2: Home reads as a scrollable feed of cards — greeting
-   → active-run/empty → recent activity — each its own rounded surface with
-   breathing room between, rather than a fixed dashboard. */
+   → active-carrera/empty → recent activity → "¿Cómo funciona?" — each its own
+   rounded surface with breathing room between, rather than a fixed dashboard. */
 .home-feed {
   --padding-top: var(--app-spacing-md, 16px);
-  --padding-bottom: var(--app-spacing-xl, 32px);
+  /* Extra bottom padding so the last card clears the always-visible
+     start-carrera FAB (TabsPage.vue), which floats above the tab bar on
+     every page including this one. */
+  --padding-bottom: calc(var(--app-spacing-xl, 32px) + 72px);
 }
 
 .home-card {
@@ -183,8 +190,13 @@ function startRun(): void {
 }
 
 .home-greeting__sub {
+  /* Longer sentence than the old "¿Qué harás hoy?" — a smaller size and
+     relaxed line-height keep it readable across 2-3 wrapped lines instead of
+     crowding the heading above it. */
   margin: var(--app-spacing-xs, 4px) 0 0;
   color: var(--ion-color-medium);
+  font-size: var(--app-font-size-md);
+  line-height: var(--app-line-height-relaxed, 1.55);
 }
 
 .home-run__header {
@@ -209,7 +221,7 @@ function startRun(): void {
   font-weight: var(--app-font-weight-semibold);
 }
 
-/* Gentle crossfade between the active-run card and the empty-state card. */
+/* Gentle crossfade between the active-carrera card and the empty-state card. */
 .cardfade-enter-active,
 .cardfade-leave-active {
   transition:

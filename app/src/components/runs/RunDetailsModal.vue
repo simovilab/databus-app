@@ -10,12 +10,12 @@
     :breakpoints="[0, 0.5, 1]"
     :initial-breakpoint="1"
     role="dialog"
-    aria-label="Run details"
+    aria-label="Detalle de la carrera"
     @did-dismiss="onDismiss"
   >
     <ion-header>
       <ion-toolbar>
-        <ion-title>Detalle del run</ion-title>
+        <ion-title>Detalle de la carrera</ion-title>
         <ion-buttons slot="end">
           <ion-button data-testid="run-details-close" @click="onDismiss">Cerrar</ion-button>
         </ion-buttons>
@@ -70,7 +70,7 @@
           <app-error
             v-else-if="error"
             :error="error"
-            fallback-message="No se pudo cargar la bitácora del run."
+            fallback-message="No se pudo cargar la bitácora de la carrera."
             retry-label="Reintentar"
             @retry="loadTimeline"
           />

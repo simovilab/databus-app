@@ -23,12 +23,12 @@
     :initial-breakpoint="1"
     :handle="false"
     role="dialog"
-    aria-label="Iniciar un run"
+    aria-label="Iniciar una carrera"
     @did-dismiss="onDismiss"
   >
     <ion-header>
       <ion-toolbar>
-        <ion-title>Iniciar run</ion-title>
+        <ion-title>Iniciar carrera</ion-title>
         <ion-buttons slot="end">
           <ion-button
             data-testid="modal-close"
@@ -43,7 +43,7 @@
       <Transition name="check-pop">
         <div v-if="justConfirmed" class="confirm-pulse" aria-hidden="true">
           <ion-icon :icon="checkmarkCircle" color="success" />
-          <p>Run iniciado</p>
+          <p>Carrera iniciada</p>
         </div>
       </Transition>
 
@@ -54,7 +54,7 @@
       <app-error
         v-else-if="!justConfirmed && phase === 'setup' && initialError"
         :error="initialError"
-        fallback-message="No se pudo cargar el horario. Intenta de nuevo."
+        fallback-message="No se pudo cargar el horario. Intente de nuevo."
         retry-label="Reintentar"
         @retry="loadInitial"
       />
@@ -62,7 +62,7 @@
       <template v-else-if="!justConfirmed && phase === 'setup'">
         <!-- Route -->
         <section class="setup-section">
-          <h2 class="step-title">1. Selecciona una ruta</h2>
+          <h2 class="step-title">1. Seleccione una ruta</h2>
           <p v-if="routes.length === 0" class="step-empty">No hay rutas disponibles para hoy.</p>
           <ion-list v-else>
             <ion-radio-group
@@ -106,13 +106,13 @@
              scrollable box (see .trip-list below) instead of the full day's
              schedule. -->
         <section class="setup-section">
-          <h2 class="step-title">2. Selecciona un viaje</h2>
-          <p v-if="!selectedRouteId" class="step-empty">Selecciona una ruta primero.</p>
+          <h2 class="step-title">2. Seleccione un viaje</h2>
+          <p v-if="!selectedRouteId" class="step-empty">Seleccione una ruta primero.</p>
           <app-loading v-else-if="tripsLoading" message="Cargando viajes…" />
           <app-error
             v-else-if="tripsError"
             :error="tripsError"
-            fallback-message="No se pudieron cargar los viajes. Intenta de nuevo."
+            fallback-message="No se pudieron cargar los viajes. Intente de nuevo."
             retry-label="Reintentar"
             @retry="loadTrips"
           />
@@ -189,7 +189,7 @@
 
         <!-- Vehicle -->
         <section class="setup-section">
-          <h2 class="step-title">3. Selecciona un vehículo</h2>
+          <h2 class="step-title">3. Seleccione un vehículo</h2>
           <ion-toggle
             v-model="manualVehicle"
             data-testid="vehicle-manual-toggle"
@@ -197,7 +197,7 @@
 
           <ion-list v-if="!manualVehicle">
             <p v-if="vehicles.length === 0" class="step-empty">
-              No hay vehículos listados. Activa la entrada manual para escribir un ID.
+              No hay vehículos listados. Active la entrada manual para escribir un ID.
             </p>
             <ion-radio-group
               v-model="selectedVehicleId"
@@ -238,7 +238,7 @@
           class="setup-section confirm-error"
           data-testid="confirm-error"
           :error="confirmError"
-          fallback-message="No se pudo iniciar el run. Intenta de nuevo."
+          fallback-message="No se pudo iniciar la carrera. Intente de nuevo."
         />
       </template>
 
@@ -248,8 +248,8 @@
            backend. -->
       <template v-else-if="!justConfirmed && phase === 'reviewing'">
         <section class="setup-section">
-          <h2 class="step-title">Revisa tu run</h2>
-          <p class="step-empty">Confirma estos detalles antes de empezar a conducir.</p>
+          <h2 class="step-title">Revise su carrera</h2>
+          <p class="step-empty">Confirme estos detalles antes de empezar a conducir.</p>
         </section>
 
         <ion-list data-testid="review-summary">
@@ -284,7 +284,7 @@
           class="setup-section confirm-error"
           data-testid="confirm-error"
           :error="confirmError"
-          fallback-message="No se pudo iniciar el run. Intenta de nuevo."
+          fallback-message="No se pudo iniciar la carrera. Intente de nuevo."
         />
       </template>
     </ion-content>
@@ -308,7 +308,7 @@
             @click="onInitialize"
           >
             <ion-spinner v-if="busy" name="crescent" slot="start" />
-            Revisar run
+            Revisar carrera
           </ion-button>
           <ion-button
             v-else
@@ -318,7 +318,7 @@
             @click="onConfirmReview"
           >
             <ion-spinner v-if="busy" name="crescent" slot="start" />
-            Confirmar run
+            Confirmar carrera
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -634,7 +634,7 @@ function toConfirmError(err: unknown, fallbackStep: string): Error {
     return new Error(detail ?? `No se pudo ${fallbackStep} (paso "${err.step ?? 'desconocido'}").`);
   }
   if (err instanceof Error) return err;
-  return new Error(`No se pudo ${fallbackStep}. Intenta de nuevo.`);
+  return new Error(`No se pudo ${fallbackStep}. Intente de nuevo.`);
 }
 
 /** Step 1: validate the selection and move to the review screen. Purely
@@ -643,15 +643,15 @@ function toConfirmError(err: unknown, fallbackStep: string): Error {
 function onInitialize(): void {
   const operatorId = authStore.session?.operatorId;
   if (!operatorId) {
-    confirmError.value = new Error('No hay sesión de operador. Inicia sesión de nuevo.');
+    confirmError.value = new Error('No hay sesión de operador. Inicie sesión de nuevo.');
     return;
   }
   if (!selectedRoute.value || !selectedTrip.value) {
-    confirmError.value = new Error('Faltan detalles del run. Reinicia la selección.');
+    confirmError.value = new Error('Faltan detalles de la carrera. Reinicie la selección.');
     return;
   }
   if (!vehicleId.value) {
-    confirmError.value = new Error('Se requiere un vehículo para iniciar el run.');
+    confirmError.value = new Error('Se requiere un vehículo para iniciar la carrera.');
     return;
   }
 
@@ -697,7 +697,7 @@ async function onConfirmReview(): Promise<void> {
       emit('dismissed');
     }, pulseMs);
   } catch (err) {
-    confirmError.value = toConfirmError(err, 'iniciar el run');
+    confirmError.value = toConfirmError(err, 'iniciar la carrera');
     busy.value = false;
   }
 }
@@ -752,7 +752,7 @@ function extractApiErrorDetail(err: ApiError): string | undefined {
   font-size: var(--app-font-size-md);
 }
 
-/* The two sub-steps inside "2. Selecciona un viaje" — starting point, then
+/* The two sub-steps inside "2. Seleccione un viaje" — starting point, then
    departure time — need a lighter heading than .step-title's numbered
    sections. */
 .substep-title {

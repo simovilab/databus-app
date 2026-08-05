@@ -8,7 +8,7 @@
     <ion-content class="ion-padding">
       <EmptyState
         title="Todo tranquilo por aquí"
-        message="Muy pronto verás aquí tus anuncios, alertas de servicio y chat con la central."
+        message="Muy pronto verá aquí sus anuncios, alertas de servicio y chat con la central."
         :icon="chatbubblesOutline"
         accent="tertiary"
       />

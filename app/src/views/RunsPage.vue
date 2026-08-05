@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-title>Runs</ion-title>
+        <ion-title>Carreras</ion-title>
       </ion-toolbar>
       <ion-toolbar>
         <ion-segment v-model="segment" data-testid="runs-segment">
@@ -25,14 +25,14 @@
         />
         <empty-state
           v-else
-          title="Sin run activo"
-          message="Cuando estés listo, inicia un run programado y empezamos a transmitir telemetría."
+          title="Sin carrera activa"
+          message="Cuando esté listo, inicie una carrera programada y empezamos a transmitir telemetría."
         >
           <template #action>
             <ion-button
               data-testid="start-run-cta"
               @click="setupOpen = true"
-            >Iniciar run</ion-button>
+            >Iniciar carrera</ion-button>
           </template>
         </empty-state>
       </template>
@@ -130,7 +130,7 @@ async function onRefreshHistory(event: RefresherCustomEvent): Promise<void> {
 onIonViewWillEnter(() => {
   void historyStore.reconcile();
 
-  // Home's "Iniciar un run" CTA appends ?start=1 to jump straight to the
+  // Home's "Iniciar una carrera" CTA appends ?start=1 to jump straight to the
   // setup form, bypassing whatever segment (Activo/Historial) was last
   // active — the view is kept alive by the tab outlet, so this must be
   // re-checked on every enter, not just on mount.

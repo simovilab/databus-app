@@ -2,7 +2,7 @@
   <div>
     <empty-state
       v-if="entries.length === 0"
-      title="Aún no hay runs por aquí"
+      title="Aún no hay carreras por aquí"
       :message="emptyMessage"
       :icon="timeOutline"
       accent="medium"
@@ -47,7 +47,7 @@ const props = withDefaults(
   }>(),
   {
     max: undefined,
-    emptyMessage: 'En cuanto termines tu primer run, aparecerá justo aquí.',
+    emptyMessage: 'En cuanto termine su primera carrera, aparecerá justo aquí.',
   },
 );
 

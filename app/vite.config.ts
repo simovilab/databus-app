@@ -39,9 +39,10 @@ export default defineConfig({
         scope: '/',
         display: 'standalone',
         categories: ['transportation'],
-        // Cyan is the "b" mark's own colour (#00c0f3, sampled from
-        // public/logo/databus-mark.png) — the install identity follows the mark.
-        theme_color: '#00c0f3',
+        // #6dc067 is the green bar's own colour, sampled from the "db" mark
+        // artwork (public/logo/databus-db-dark.png) — the install identity
+        // follows the mark.
+        theme_color: '#6dc067',
         // Matches the palette's `secondary`, which SplashPage paints as its
         // background — so the OS splash flows into the app's first paint
         // instead of flashing white. Static by nature: the in-app palette is
@@ -52,7 +53,8 @@ export default defineConfig({
           { src: 'pwa/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
           {
             // Cropped to the inner ~80% by Android, so this one is the
-            // knocked-out variant: solid brand field, white "b", no ring.
+            // knocked-out variant: solid green field (the mark's own bar
+            // colour), white "db", mark sized to the ~60% safe zone.
             src: 'pwa/pwa-maskable-512x512.png',
             sizes: '512x512',
             type: 'image/png',

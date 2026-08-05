@@ -20,7 +20,7 @@
             fill="outline"
             autocomplete="username"
             inputmode="text"
-            helper-text="Tu identificador de operador"
+            helper-text="Su identificador de operador"
             error-text="El usuario es obligatorio"
             @ion-blur="touched.username = true"
           />
@@ -46,7 +46,7 @@
             v-if="loginError"
             class="login-form__error"
             :error="loginError"
-            fallback-message="No se pudo iniciar sesión. Verifica tus credenciales."
+            fallback-message="No se pudo iniciar sesión. Verifique sus credenciales."
           />
 
           <ion-button
@@ -66,7 +66,7 @@
             tabindex="-1"
             aria-disabled="true"
           >
-            ¿Olvidaste tu contraseña? (próximamente)
+            ¿Olvidó su contraseña? (próximamente)
           </button>
         </form>
       </div>
@@ -105,7 +105,7 @@ function toLoginMessage(error: unknown): string {
     // A failed fetch (no response) is reported as status 0 with an English
     // "Network request failed" detail — translate it rather than leak it.
     if (error.status === 0) {
-      return 'Sin conexión al servidor. Revisa tu red e inténtalo de nuevo.';
+      return 'Sin conexión al servidor. Revise su red e inténtelo de nuevo.';
     }
     const errors = error.errors;
     if (errors && typeof errors === 'object' && 'detail' in errors) {
@@ -115,12 +115,12 @@ function toLoginMessage(error: unknown): string {
       if (typeof detail === 'string' && detail.trim()) return detail;
     }
     if (error.status >= 500) {
-      return 'El servidor no está disponible. Inténtalo más tarde.';
+      return 'El servidor no está disponible. Inténtelo más tarde.';
     }
     return error.message || 'No se pudo iniciar sesión.';
   }
   if (error instanceof Error && error.message) return error.message;
-  return 'No se pudo iniciar sesión. Verifica tus credenciales.';
+  return 'No se pudo iniciar sesión. Verifique sus credenciales.';
 }
 
 async function submit(): Promise<void> {

@@ -16,18 +16,20 @@
 
     <link rel="shortcut icon" type="image/png" href="/favicon.png" />
 
-    <!-- Matches manifest.theme_color: the "b" mark's own cyan. Tints the Android
-         task switcher and the browser UI. -->
-    <meta name="theme-color" content="#00c0f3" />
+    <!-- Matches manifest.theme_color: the green bar's own colour, sampled from
+         the "db" mark artwork. Tints the Android task switcher and the browser
+         UI. -->
+    <meta name="theme-color" content="#6dc067" />
 
     <!-- add to homescreen for ios -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Databús" />
     <!-- iOS ignores the manifest icons and does not support `maskable`, so it
-         needs its own link. It also does not support transparency here: the old
-         /logo/databus-mark.png has an alpha channel, which iOS composites onto
-         BLACK. This one is the opaque knocked-out variant at the documented
-         180x180, so the home-screen icon is a clean cyan tile. -->
+         needs its own link. It also does not support transparency here: source
+         art like /logo/databus-db-dark.png has an alpha channel, which iOS
+         composites onto BLACK. This one is the opaque flattened variant at the
+         documented 180x180 (black "db" + green bar on white), so the
+         home-screen icon is a clean tile. -->
     <link rel="apple-touch-icon" href="/pwa/apple-touch-icon-180x180.png" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   </head>

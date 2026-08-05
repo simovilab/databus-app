@@ -84,7 +84,7 @@
                 >
                   <ion-label>
                     <h3>Mantener pantalla encendida</h3>
-                    <p>Evitar que la pantalla se apague durante un run.</p>
+                    <p>Evitar que la pantalla se apague durante una carrera.</p>
                   </ion-label>
                 </ion-toggle>
               </ion-item>

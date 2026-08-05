@@ -64,7 +64,7 @@
         @click="onEndRun"
       >
         <ion-icon slot="start" :icon="stopCircleOutline" />
-        Finalizar run
+        Finalizar carrera
       </ion-button>
       <div v-else class="terminal-actions">
         <Transition name="check-pop">
@@ -73,13 +73,13 @@
           </div>
         </Transition>
         <p class="terminal-note" data-testid="run-terminal-note">
-          Este run ha terminado.
+          Esta carrera ha terminado.
         </p>
         <ion-button
           expand="block"
           data-testid="start-new-run-button"
           @click="emit('start-new')"
-        >Iniciar un nuevo run</ion-button>
+        >Iniciar una nueva carrera</ion-button>
       </div>
     </div>
   </div>
@@ -224,10 +224,10 @@ const telemetryDetail = computed(() => {
     return 'Obteniendo GPS y conectando al broker…';
   }
   if (status === 'unavailable') {
-    return 'El reporte de GPS no está disponible en el navegador — usa la app instalada. El run no se ve afectado.';
+    return 'El reporte de GPS no está disponible en el navegador — use la app instalada. La carrera no se ve afectada.';
   }
   if (status === 'error') {
-    return 'La telemetría no está disponible. El run continúa; las posiciones se reintentarán.';
+    return 'La telemetría no está disponible. La carrera continúa; las posiciones se reintentarán.';
   }
   return 'La telemetría está inactiva.';
 });
@@ -282,7 +282,7 @@ async function onEndRun(): Promise<void> {
     endError.value =
       err instanceof Error
         ? err.message
-        : 'No se pudo finalizar el run. Intenta de nuevo.';
+        : 'No se pudo finalizar la carrera. Intente de nuevo.';
   } finally {
     ending.value = false;
   }
